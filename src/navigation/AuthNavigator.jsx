@@ -15,6 +15,7 @@ const AuthNavigator = () => {
       screenOptions={{
         headerShown: false,
         gestureEnabled: true,
+        gestureDirection: 'horizontal',
         cardStyleInterpolator: ({ current, layouts }) => {
           return {
             cardStyle: {

@@ -15,21 +15,89 @@ import Icon from 'react-native-vector-icons/Ionicons';
 import { useAuth } from '../context/AuthContext';
 
 const Login = ({ navigation }) => {
-  const [email, setEmail] = useState('');
+  const [identifier, setIdentifier] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const { login } = useAuth();
 
+  const validateEmail = (email) => {
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    return emailRegex.test(email);
+  };
+
+  const validatePhone = (phone) => {
+    // Bangladesh phone number regex
+    // Supports formats: +880XXXXXXXXX, 880XXXXXXXXX, 01XXXXXXXXX, 1XXXXXXXXX
+    const bangladeshPhoneRegex = /^(\+?880|01?|1)[0-9]{10,11}$/;
+    
+    // Remove all non-digit characters except + for initial check
+    const cleanPhone = phone.replace(/[^\d+]/g, '');
+    
+    // Check if it matches Bangladesh phone number pattern
+    return bangladeshPhoneRegex.test(cleanPhone);
+  };
+
+  const getInputType = (input) => {
+    if (validateEmail(input)) {
+      return 'email';
+    } else if (validatePhone(input)) {
+      return 'phone';
+    }
+    return 'unknown';
+  };
+
+  const getInputIcon = () => {
+    const inputType = getInputType(identifier);
+    switch (inputType) {
+      case 'email':
+        return 'mail-outline';
+      case 'phone':
+        return 'call-outline';
+      default:
+        return 'person-outline';
+    }
+  };
+
+  const getInputPlaceholder = () => {
+    const inputType = getInputType(identifier);
+    switch (inputType) {
+      case 'email':
+        return 'Enter your email address';
+      case 'phone':
+        return 'Enter your phone number';
+      default:
+        return 'Enter email or phone number';
+    }
+  };
+
+  const getKeyboardType = () => {
+    const inputType = getInputType(identifier);
+    switch (inputType) {
+      case 'email':
+        return 'email-address';
+      case 'phone':
+        return 'phone-pad';
+      default:
+        return 'default';
+    }
+  };
+
   const handleLogin = async () => {
-    if (!email || !password) {
+    if (!identifier || !password) {
       Alert.alert('Error', 'Please fill in all fields');
+      return;
+    }
+
+    const inputType = getInputType(identifier);
+    if (inputType === 'unknown') {
+      Alert.alert('Error', 'Please enter a valid email address or phone number');
       return;
     }
 
     setIsLoading(true);
     try {
-      const result = await login(email, password);
+      const result = await login(identifier, password, inputType);
       if (result.success) {
         Alert.alert('Success', 'Login successful!');
       } else {
@@ -57,13 +125,14 @@ const Login = ({ navigation }) => {
 
           <View style={styles.form}>
             <View style={styles.inputContainer}>
-              <Icon name="mail-outline" size={20} color="#666" style={styles.inputIcon} />
+              <Icon name={getInputIcon()} size={20} color="#666" style={styles.inputIcon} />
               <TextInput
                 style={styles.input}
-                placeholder="Email"
-                value={email}
-                onChangeText={setEmail}
-                keyboardType="email-address"
+                placeholder="Enter your email or phone number"
+                placeholderTextColor="#999"
+                value={identifier}
+                onChangeText={setIdentifier}
+                keyboardType={getKeyboardType()}
                 autoCapitalize="none"
                 autoCorrect={false}
                 editable={!isLoading}
@@ -74,7 +143,8 @@ const Login = ({ navigation }) => {
               <Icon name="lock-closed-outline" size={20} color="#666" style={styles.inputIcon} />
               <TextInput
                 style={styles.input}
-                placeholder="Password"
+                placeholder="Enter your password"
+                placeholderTextColor="#999"
                 value={password}
                 onChangeText={setPassword}
                 secureTextEntry={!showPassword}

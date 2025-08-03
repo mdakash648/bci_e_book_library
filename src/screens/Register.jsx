@@ -17,7 +17,7 @@ import { useAuth } from '../context/AuthContext';
 
 const Register = ({ navigation }) => {
   const [name, setName] = useState('');
-  const [email, setEmail] = useState('');
+  const [identifier, setIdentifier] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [secretKey, setSecretKey] = useState('');
@@ -28,9 +28,77 @@ const Register = ({ navigation }) => {
   const [isLoading, setIsLoading] = useState(false);
   const { register } = useAuth();
 
+  const validateEmail = (email) => {
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    return emailRegex.test(email);
+  };
+
+  const validatePhone = (phone) => {
+    // Bangladesh phone number regex
+    // Supports formats: +880XXXXXXXXX, 880XXXXXXXXX, 01XXXXXXXXX, 1XXXXXXXXX
+    const bangladeshPhoneRegex = /^(\+?880|01?|1)[0-9]{10,11}$/;
+    
+    // Remove all non-digit characters except + for initial check
+    const cleanPhone = phone.replace(/[^\d+]/g, '');
+    
+    // Check if it matches Bangladesh phone number pattern
+    return bangladeshPhoneRegex.test(cleanPhone);
+  };
+
+  const getInputType = (input) => {
+    if (validateEmail(input)) {
+      return 'email';
+    } else if (validatePhone(input)) {
+      return 'phone';
+    }
+    return 'unknown';
+  };
+
+  const getInputIcon = () => {
+    const inputType = getInputType(identifier);
+    switch (inputType) {
+      case 'email':
+        return 'mail-outline';
+      case 'phone':
+        return 'call-outline';
+      default:
+        return 'person-outline';
+    }
+  };
+
+  const getInputPlaceholder = () => {
+    const inputType = getInputType(identifier);
+    switch (inputType) {
+      case 'email':
+        return 'Enter your email address';
+      case 'phone':
+        return 'Enter your phone number';
+      default:
+        return 'Enter email or phone number';
+    }
+  };
+
+  const getKeyboardType = () => {
+    const inputType = getInputType(identifier);
+    switch (inputType) {
+      case 'email':
+        return 'email-address';
+      case 'phone':
+        return 'phone-pad';
+      default:
+        return 'default';
+    }
+  };
+
   const handleRegister = async () => {
-    if (!name || !email || !password || !confirmPassword) {
+    if (!name || !identifier || !password || !confirmPassword) {
       Alert.alert('Error', 'Please fill in all fields');
+      return;
+    }
+
+    const inputType = getInputType(identifier);
+    if (inputType === 'unknown') {
+      Alert.alert('Error', 'Please enter a valid email address or phone number');
       return;
     }
 
@@ -51,15 +119,16 @@ const Register = ({ navigation }) => {
 
     setIsLoading(true);
     try {
-      const result = await register(name, email, password, isAdmin, secretKey);
+      const result = await register(name, identifier, password, isAdmin, secretKey, inputType);
       if (result.success) {
         // Navigate to OTP verification instead of showing success alert
         navigation.navigate('OTPVerification', {
-          email: email,
+          identifier: identifier,
           userData: {
             name,
-            email,
+            identifier,
             isAdmin,
+            inputType,
           },
         });
       } else {
@@ -88,8 +157,17 @@ const Register = ({ navigation }) => {
         <ScrollView contentContainerStyle={styles.scrollContent}>
           <TouchableOpacity
             style={styles.backButton}
-            onPress={() => navigation.goBack()}
+            onPress={() => {
+              console.log('Back button pressed');
+              console.log('Can go back:', navigation.canGoBack());
+              if (navigation.canGoBack()) {
+                navigation.goBack();
+              } else {
+                navigation.navigate('Login');
+              }
+            }}
             disabled={isLoading}
+            activeOpacity={0.7}
           >
             <Icon name="arrow-back" size={24} color="#333" />
           </TouchableOpacity>
@@ -97,7 +175,7 @@ const Register = ({ navigation }) => {
           <View style={styles.header}>
             <Icon name="library" size={80} color="#007AFF" />
             <Text style={styles.title}>Create Account</Text>
-            <Text style={styles.subtitle}>Join our BCI E-Book Library</Text>
+            <Text style={styles.subtitle}>Join our e-book library community</Text>
           </View>
 
           <View style={styles.form}>
@@ -105,23 +183,24 @@ const Register = ({ navigation }) => {
               <Icon name="person-outline" size={20} color="#666" style={styles.inputIcon} />
               <TextInput
                 style={styles.input}
-                placeholder="Full Name"
+                placeholder="Enter your full name"
+                placeholderTextColor="#999"
                 value={name}
                 onChangeText={setName}
                 autoCapitalize="words"
-                autoCorrect={false}
                 editable={!isLoading}
               />
             </View>
 
             <View style={styles.inputContainer}>
-              <Icon name="mail-outline" size={20} color="#666" style={styles.inputIcon} />
+              <Icon name={getInputIcon()} size={20} color="#666" style={styles.inputIcon} />
               <TextInput
                 style={styles.input}
-                placeholder="Email"
-                value={email}
-                onChangeText={setEmail}
-                keyboardType="email-address"
+                placeholder="Enter your email or phone number"
+                placeholderTextColor="#999"
+                value={identifier}
+                onChangeText={setIdentifier}
+                keyboardType={getKeyboardType()}
                 autoCapitalize="none"
                 autoCorrect={false}
                 editable={!isLoading}
@@ -132,7 +211,8 @@ const Register = ({ navigation }) => {
               <Icon name="lock-closed-outline" size={20} color="#666" style={styles.inputIcon} />
               <TextInput
                 style={styles.input}
-                placeholder="Password"
+                placeholder="Enter your password"
+                placeholderTextColor="#999"
                 value={password}
                 onChangeText={setPassword}
                 secureTextEntry={!showPassword}
@@ -156,7 +236,8 @@ const Register = ({ navigation }) => {
               <Icon name="lock-closed-outline" size={20} color="#666" style={styles.inputIcon} />
               <TextInput
                 style={styles.input}
-                placeholder="Confirm Password"
+                placeholder="Confirm your password"
+                placeholderTextColor="#999"
                 value={confirmPassword}
                 onChangeText={setConfirmPassword}
                 secureTextEntry={!showConfirmPassword}
@@ -199,7 +280,8 @@ const Register = ({ navigation }) => {
                 <Icon name="key-outline" size={20} color="#666" style={styles.inputIcon} />
                 <TextInput
                   style={styles.input}
-                  placeholder="Admin Secret Key"
+                  placeholder="Enter admin secret key"
+                  placeholderTextColor="#999"
                   value={secretKey}
                   onChangeText={setSecretKey}
                   secureTextEntry={!showSecretKey}
@@ -222,31 +304,18 @@ const Register = ({ navigation }) => {
 
             <View style={styles.termsContainer}>
               <Text style={styles.termsText}>
-                By signing up, you agree to our{' '}
-                <Text style={styles.termsLink}>Terms of Service</Text> and{' '}
-                <Text style={styles.termsLink}>Privacy Policy</Text>
+                By signing up, you agree to our Terms of Service and Privacy Policy
               </Text>
             </View>
 
-            <TouchableOpacity 
-              style={[styles.registerButton, isLoading && styles.registerButtonDisabled]} 
+            <TouchableOpacity
+              style={[styles.registerButton, isLoading && styles.registerButtonDisabled]}
               onPress={handleRegister}
               disabled={isLoading}
             >
               <Text style={styles.registerButtonText}>
                 {isLoading ? 'Creating Account...' : 'Create Account'}
               </Text>
-            </TouchableOpacity>
-
-            <View style={styles.divider}>
-              <View style={styles.dividerLine} />
-              <Text style={styles.dividerText}>or</Text>
-              <View style={styles.dividerLine} />
-            </View>
-
-            <TouchableOpacity style={styles.googleButton} disabled={isLoading}>
-              <Icon name="logo-google" size={20} color="#DB4437" />
-              <Text style={styles.googleButtonText}>Continue with Google</Text>
             </TouchableOpacity>
           </View>
 
@@ -276,10 +345,20 @@ const styles = StyleSheet.create({
   },
   backButton: {
     position: 'absolute',
-    top: 20,
+    top: 45,
     left: 20,
-    zIndex: 1,
-    padding: 8,
+    zIndex: 10,
+    padding: 12,
+    backgroundColor: 'rgba(255, 255, 255, 0.9)',
+    borderRadius: 20,
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.1,
+    shadowRadius: 3.84,
+    elevation: 5,
   },
   header: {
     alignItems: 'center',
@@ -380,10 +459,6 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     lineHeight: 18,
   },
-  termsLink: {
-    color: '#007AFF',
-    fontWeight: '500',
-  },
   registerButton: {
     backgroundColor: '#007AFF',
     borderRadius: 12,
@@ -408,37 +483,6 @@ const styles = StyleSheet.create({
     color: '#fff',
     fontSize: 18,
     fontWeight: 'bold',
-  },
-  divider: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginVertical: 20,
-  },
-  dividerLine: {
-    flex: 1,
-    height: 1,
-    backgroundColor: '#e0e0e0',
-  },
-  dividerText: {
-    marginHorizontal: 16,
-    color: '#666',
-    fontSize: 14,
-  },
-  googleButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: '#fff',
-    borderRadius: 12,
-    paddingVertical: 16,
-    borderWidth: 1,
-    borderColor: '#e0e0e0',
-  },
-  googleButtonText: {
-    marginLeft: 12,
-    fontSize: 16,
-    color: '#333',
-    fontWeight: '500',
   },
   footer: {
     flexDirection: 'row',

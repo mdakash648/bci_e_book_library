@@ -15,12 +15,35 @@ import Icon from 'react-native-vector-icons/Ionicons';
 import { useAuth } from '../context/AuthContext';
 
 const OTPVerification = ({ navigation, route }) => {
-  const { email, userData } = route.params;
+  const { identifier, userData } = route.params;
   const [otp, setOtp] = useState(['', '', '', '', '', '']);
   const [isLoading, setIsLoading] = useState(false);
   const [timeLeft, setTimeLeft] = useState(30);
   const inputRefs = useRef([]);
   const { verifyOTP } = useAuth();
+
+  const validateEmail = (email) => {
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    return emailRegex.test(email);
+  };
+
+  const getIdentifierType = () => {
+    return validateEmail(identifier) ? 'email' : 'phone';
+  };
+
+  const getIdentifierIcon = () => {
+    return getIdentifierType() === 'email' ? 'mail-check' : 'call-check';
+  };
+
+  const getIdentifierLabel = () => {
+    return getIdentifierType() === 'email' ? 'email' : 'phone number';
+  };
+
+  const getSentMessage = () => {
+    return getIdentifierType() === 'email' 
+      ? 'We\'ve sent a 6-digit code to'
+      : 'We\'ve sent a 6-digit code to your phone number';
+  };
 
   useEffect(() => {
     const timer = setInterval(() => {
@@ -60,7 +83,7 @@ const OTPVerification = ({ navigation, route }) => {
       const result = await verifyOTP(otpString);
       
       if (result.success) {
-        Alert.alert('Success', 'Email verified successfully!', [
+        Alert.alert('Success', 'Verification successful!', [
           {
             text: 'OK',
             onPress: () => {
@@ -82,7 +105,11 @@ const OTPVerification = ({ navigation, route }) => {
   const handleResendOTP = () => {
     setTimeLeft(30);
     setOtp(['', '', '', '', '', '']);
-    Alert.alert('Success', 'OTP resent to your email');
+    const identifierType = getIdentifierType();
+    const message = identifierType === 'email' 
+      ? 'OTP resent to your email'
+      : 'OTP resent to your phone number';
+    Alert.alert('Success', message);
   };
 
   const formatTime = (seconds) => {
@@ -107,12 +134,12 @@ const OTPVerification = ({ navigation, route }) => {
           </TouchableOpacity>
 
           <View style={styles.header}>
-            <Icon name="mail-check" size={80} color="#007AFF" />
-            <Text style={styles.title}>Verify Your Email</Text>
+            <Icon name={getIdentifierIcon()} size={80} color="#007AFF" />
+            <Text style={styles.title}>Verify Your {getIdentifierType() === 'email' ? 'Email' : 'Phone'}</Text>
             <Text style={styles.subtitle}>
-              We've sent a 6-digit code to
+              {getSentMessage()}
             </Text>
-            <Text style={styles.email}>{email}</Text>
+            <Text style={styles.identifier}>{identifier}</Text>
           </View>
 
           <View style={styles.otpContainer}>
@@ -144,7 +171,7 @@ const OTPVerification = ({ navigation, route }) => {
             disabled={isLoading}
           >
             <Text style={styles.verifyButtonText}>
-              {isLoading ? 'Verifying...' : 'Verify Email'}
+              {isLoading ? 'Verifying...' : `Verify ${getIdentifierType() === 'email' ? 'Email' : 'Phone'}`}
             </Text>
           </TouchableOpacity>
 
@@ -163,7 +190,7 @@ const OTPVerification = ({ navigation, route }) => {
 
           <View style={styles.helpContainer}>
             <Text style={styles.helpText}>
-              Having trouble? Check your spam folder or contact support.
+              Having trouble? Check your {getIdentifierType() === 'email' ? 'spam folder' : 'messages'} or contact support.
             </Text>
           </View>
         </ScrollView>

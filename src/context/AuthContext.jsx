@@ -18,17 +18,18 @@ export const AuthProvider = ({ children }) => {
   // TODO: Replace with actual admin secret key from Firebase/backend
   const ADMIN_SECRET_KEY = 'admin123456';
 
-  const login = async (email, password) => {
+  const login = async (identifier, password, inputType = 'email') => {
     try {
       // TODO: Implement Firebase authentication
-      console.log('Logging in with:', email, password);
+      console.log('Logging in with:', { identifier, password, inputType });
       
       // Simulate successful login
       const mockUser = {
         id: '1',
-        email: email,
+        identifier: identifier,
         name: 'Test User',
         role: 'user', // Default to user role
+        inputType: inputType,
       };
       
       setUser(mockUser);
@@ -40,10 +41,10 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
-  const register = async (name, email, password, isAdmin = false, secretKey = '') => {
+  const register = async (name, identifier, password, isAdmin = false, secretKey = '', inputType = 'email') => {
     try {
       // TODO: Implement Firebase registration
-      console.log('Registering with:', { name, email, password, isAdmin, secretKey });
+      console.log('Registering with:', { name, identifier, password, isAdmin, secretKey, inputType });
       
       // Validate admin secret key if registering as admin
       if (isAdmin) {
@@ -59,10 +60,11 @@ export const AuthProvider = ({ children }) => {
       // Store pending user data for OTP verification
       const pendingUserData = {
         id: Date.now().toString(),
-        email: email,
+        identifier: identifier,
         name: name,
         role: isAdmin ? 'admin' : 'user',
         password: password, // In real app, this would be hashed
+        inputType: inputType,
       };
       
       setPendingUser(pendingUserData);
@@ -98,19 +100,54 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
-  const resetPassword = async (email) => {
+  const resetPassword = async (identifier, inputType = 'email') => {
     try {
       // TODO: Implement Firebase password reset
-      console.log('Resetting password for:', email);
+      console.log('Resetting password for:', { identifier, inputType });
       
-      // Simulate password reset (in real app, send email via Firebase)
+      // Simulate password reset (in real app, send email/SMS via Firebase)
       await new Promise(resolve => setTimeout(resolve, 2000));
       
       // For testing purposes, always return success
-      // In real app, check if email exists in database
+      // In real app, check if identifier exists in database
       return { success: true };
     } catch (error) {
       console.error('Password reset error:', error);
+      return { success: false, error: error.message };
+    }
+  };
+
+  const updateAdminSecretKey = async (currentPassword, newSecretKey) => {
+    try {
+      // TODO: Implement Firebase admin secret key update
+      console.log('Updating admin secret key:', { currentPassword, newSecretKey });
+      
+      // Validate current password (in real app, verify with Firebase)
+      if (!currentPassword) {
+        return { success: false, error: 'Current password is required' };
+      }
+
+      // For testing purposes, accept any password
+      // In real app, verify the current password with Firebase
+      if (currentPassword.length < 6) {
+        return { success: false, error: 'Invalid current password' };
+      }
+
+      // Validate new secret key
+      if (!newSecretKey || newSecretKey.length < 6) {
+        return { success: false, error: 'New secret key must be at least 6 characters long' };
+      }
+
+      // Simulate update process
+      await new Promise(resolve => setTimeout(resolve, 1500));
+      
+      // Update the admin secret key (in real app, update in Firebase)
+      // For now, we'll just log it
+      console.log('Admin secret key updated to:', newSecretKey);
+      
+      return { success: true };
+    } catch (error) {
+      console.error('Admin secret key update error:', error);
       return { success: false, error: error.message };
     }
   };
@@ -129,6 +166,7 @@ export const AuthProvider = ({ children }) => {
     register,
     verifyOTP,
     resetPassword,
+    updateAdminSecretKey,
     logout,
   };
 

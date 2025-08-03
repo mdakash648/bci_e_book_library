@@ -15,7 +15,7 @@ import Icon from 'react-native-vector-icons/Ionicons';
 import { useAuth } from '../context/AuthContext';
 
 const ForgotPassword = ({ navigation }) => {
-  const [email, setEmail] = useState('');
+  const [identifier, setIdentifier] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const { resetPassword } = useAuth();
 
@@ -24,25 +24,91 @@ const ForgotPassword = ({ navigation }) => {
     return emailRegex.test(email);
   };
 
+  const validatePhone = (phone) => {
+    // Remove all non-digit characters
+    const cleanPhone = phone.replace(/\D/g, '');
+    // Check if it's a valid phone number (7-15 digits)
+    return cleanPhone.length >= 7 && cleanPhone.length <= 15;
+  };
+
+  const getInputType = (input) => {
+    if (validateEmail(input)) {
+      return 'email';
+    } else if (validatePhone(input)) {
+      return 'phone';
+    }
+    
+    return 'unknown';
+  };
+
+  const getInputIcon = () => {
+    const inputType = getInputType(identifier);
+    switch (inputType) {
+      case 'email':
+        return 'mail-outline';
+      case 'phone':
+        return 'call-outline';
+      default:
+        return 'person-outline';
+    }
+  };
+
+  const getInputPlaceholder = () => {
+    const inputType = getInputType(identifier);
+    switch (inputType) {
+      case 'email':
+        return 'Enter your email address';
+      case 'phone':
+        return 'Enter your phone number';
+      default:
+        return 'Enter your email or phone number';
+    }
+  };
+
+  const getKeyboardType = () => {
+    const inputType = getInputType(identifier);
+    switch (inputType) {
+      case 'email':
+        return 'email-address';
+      case 'phone':
+        return 'phone-pad';
+      default:
+        return 'default';
+    }
+  };
+
+  const getResetMessage = () => {
+    const inputType = getInputType(identifier);
+    switch (inputType) {
+      case 'email':
+        return 'We\'ve sent a password reset link to your email address. Please check your inbox and follow the instructions.';
+      case 'phone':
+        return 'We\'ve sent a password reset link to your phone number. Please check your messages and follow the instructions.';
+      default:
+        return 'We\'ve sent a password reset link to your account. Please check your inbox or messages and follow the instructions.';
+    }
+  };
+
   const handleResetPassword = async () => {
-    if (!email) {
-      Alert.alert('Error', 'Please enter your email address');
+    if (!identifier) {
+      Alert.alert('Error', 'Please enter your email address or phone number');
       return;
     }
 
-    if (!validateEmail(email)) {
-      Alert.alert('Error', 'Please enter a valid email address');
+    const inputType = getInputType(identifier);
+    if (inputType === 'unknown') {
+      Alert.alert('Error', 'Please enter a valid email address or phone number');
       return;
     }
 
     setIsLoading(true);
     try {
-      const result = await resetPassword(email);
+      const result = await resetPassword(identifier, inputType);
       
       if (result.success) {
         Alert.alert(
           'Reset Link Sent',
-          'We\'ve sent a password reset link to your email address. Please check your inbox and follow the instructions.',
+          getResetMessage(),
           [
             {
               text: 'OK',
@@ -79,19 +145,20 @@ const ForgotPassword = ({ navigation }) => {
             <Icon name="lock-open" size={80} color="#007AFF" />
             <Text style={styles.title}>Forgot Password?</Text>
             <Text style={styles.subtitle}>
-              Don't worry! It happens. Please enter the email address associated with your account.
+              Don't worry! It happens. Please enter the email address or phone number associated with your account.
             </Text>
           </View>
 
           <View style={styles.formContainer}>
             <View style={styles.inputContainer}>
-              <Icon name="mail-outline" size={20} color="#666" style={styles.inputIcon} />
+              <Icon name={getInputIcon()} size={20} color="#666" style={styles.inputIcon} />
               <TextInput
                 style={styles.input}
-                placeholder="Enter your email address"
-                value={email}
-                onChangeText={setEmail}
-                keyboardType="email-address"
+                placeholder={getInputPlaceholder()}
+                placeholderTextColor="#999"
+                value={identifier}
+                onChangeText={setIdentifier}
+                keyboardType={getKeyboardType()}
                 autoCapitalize="none"
                 autoCorrect={false}
                 editable={!isLoading}
