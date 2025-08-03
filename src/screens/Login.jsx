@@ -196,7 +196,11 @@ const Login = ({ navigation }) => {
 
           <View style={styles.footer}>
             <Text style={styles.footerText}>Don't have an account? </Text>
-            <TouchableOpacity onPress={() => navigation.navigate('Register')} disabled={isLoading}>
+            <TouchableOpacity 
+              onPress={() => navigation.navigate('Register')} 
+              disabled={isLoading}
+              style={styles.signUpButton}
+            >
               <Text style={styles.signUpText}>Sign Up</Text>
             </TouchableOpacity>
           </View>
@@ -217,6 +221,7 @@ const styles = StyleSheet.create({
   scrollContent: {
     flexGrow: 1,
     padding: 20,
+    paddingBottom: 40,
   },
   header: {
     alignItems: 'center',
@@ -279,6 +284,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#007AFF',
     borderRadius: 12,
     paddingVertical: 16,
+    paddingHorizontal: 20,
     alignItems: 'center',
     marginBottom: 20,
     shadowColor: '#007AFF',
@@ -299,6 +305,7 @@ const styles = StyleSheet.create({
     color: '#fff',
     fontSize: 18,
     fontWeight: 'bold',
+    textAlign: 'center',
   },
   divider: {
     flexDirection: 'row',
@@ -336,10 +343,14 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     marginTop: 20,
+    flexWrap: 'wrap',
   },
   footerText: {
     color: '#666',
     fontSize: 14,
+  },
+  signUpButton: {
+    paddingHorizontal: 4,
   },
   signUpText: {
     color: '#007AFF',

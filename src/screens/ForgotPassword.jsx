@@ -232,7 +232,7 @@ const styles = StyleSheet.create({
     color: '#333',
     marginTop: 20,
     marginBottom: 15,
-    textAlign: 'center',
+    flexWrap: 'wrap',
   },
   subtitle: {
     fontSize: 16,
@@ -292,6 +292,7 @@ const styles = StyleSheet.create({
     color: '#fff',
     fontSize: 18,
     fontWeight: 'bold',
+    textAlign: 'center',
   },
   helpContainer: {
     alignItems: 'center',

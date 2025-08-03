@@ -342,6 +342,7 @@ const styles = StyleSheet.create({
   scrollContent: {
     flexGrow: 1,
     padding: 20,
+    paddingBottom: 40,
   },
   backButton: {
     position: 'absolute',
@@ -364,6 +365,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginTop: 60,
     marginBottom: 40,
+    paddingHorizontal: 20,
   },
   title: {
     fontSize: 28,
@@ -371,6 +373,8 @@ const styles = StyleSheet.create({
     color: '#333',
     marginTop: 20,
     marginBottom: 10,
+    textAlign: 'center',
+    flexWrap: 'wrap',
   },
   subtitle: {
     fontSize: 16,
@@ -483,6 +487,8 @@ const styles = StyleSheet.create({
     color: '#fff',
     fontSize: 18,
     fontWeight: 'bold',
+    textAlign: 'center',
+
   },
   footer: {
     flexDirection: 'row',
