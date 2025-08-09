@@ -11,10 +11,12 @@ import {
   Modal,
 } from 'react-native';
 import Icon from 'react-native-vector-icons/Ionicons';
+import { useNavigation } from '@react-navigation/native';
 import { useAuth } from '../context/AuthContext';
 import firebaseService from '../services/firebaseService';
 
 const Settings = () => {
+  const navigation = useNavigation();
   const { logout, user, refreshUserData } = useAuth();
   const [showSecretKeyModal, setShowSecretKeyModal] = useState(false);
   const [showViewKeyModal, setShowViewKeyModal] = useState(false);
@@ -193,7 +195,7 @@ const Settings = () => {
       <ScrollView style={styles.content}>
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Account</Text>
-          <TouchableOpacity style={styles.settingItem}>
+          <TouchableOpacity style={styles.settingItem} onPress={() => navigation.navigate('Profile')}>
             <Text style={styles.settingText}>Profile</Text>
             <Text style={styles.settingArrow}>›</Text>
           </TouchableOpacity>

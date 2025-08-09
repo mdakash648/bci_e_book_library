@@ -14,7 +14,7 @@ import Icon from 'react-native-vector-icons/Ionicons';
 import { useAuth } from '../context/AuthContext';
 
 const Login = ({ navigation }) => {
-  const { login, generateOTP } = useAuth();
+  const { login, generateOTP, checkAccountExists } = useAuth();
   const [identifier, setIdentifier] = useState('');
   const [password, setPassword] = useState('');
   const [otp, setOtp] = useState('');
@@ -30,16 +30,16 @@ const Login = ({ navigation }) => {
   };
 
   const validatePhone = (phone) => {
-    const phoneRegex = /^\+?[\d\s\-\(\)]+$/;
-    return phoneRegex.test(phone) && phone.replace(/\D/g, '').length >= 10;
+    const phoneRegex = /^[+\d][\d\s\-\(\)]*$/;
+    const digitsOnly = (phone || '').replace(/\D/g, '');
+    return phoneRegex.test(phone) && digitsOnly.length >= 10;
   };
 
   const getInputType = (value) => {
     const trimmed = (value || '').trim();
     if (trimmed.length === 0) return 'email';
-    const firstChar = trimmed.charAt(0);
-    if (/[0-9+]/.test(firstChar)) return 'phone';
-    if (validatePhone(trimmed)) return 'phone';
+    const digitsOnly = trimmed.replace(/\D/g, '');
+    if (validatePhone(trimmed) && digitsOnly.length >= 10) return 'phone';
     if (validateEmail(trimmed)) return 'email';
     return 'email';
   };
@@ -56,7 +56,8 @@ const Login = ({ navigation }) => {
 
   const getKeyboardType = () => {
     const inputType = getInputType(identifier);
-    return inputType === 'phone' ? 'phone-pad' : 'email-address';
+    // Do not switch to numeric keypad for phone input
+    return inputType === 'phone' ? 'default' : 'email-address';
   };
 
   const handleSendOTP = async () => {
@@ -70,6 +71,8 @@ const Login = ({ navigation }) => {
       Alert.alert('Error', 'Please enter a valid phone number');
       return;
     }
+
+    // Note: Account existence will be validated during actual login/OTP verification
 
     setOtpLoading(true);
     try {
@@ -151,10 +154,9 @@ const Login = ({ navigation }) => {
   };
 
   const handleIdentifierChange = (value) => {
-    const detectedType = getInputType(value);
-    if (detectedType === 'phone') {
-      const digitsOnly = (value || '').replace(/\D/g, '').slice(0, 11);
-      setIdentifier(digitsOnly);
+    const digitsOnly = (value || '').replace(/\D/g, '');
+    if (digitsOnly.length >= 10) {
+      setIdentifier(digitsOnly.slice(0, 11));
       setAuthMethod('password');
     } else {
       setIdentifier(value);
@@ -172,7 +174,10 @@ const Login = ({ navigation }) => {
       msg.includes('invalid-credential') ||
       msg.includes('wrong-password') ||
       msg.includes('user-not-found') ||
-      msg.includes('account not found')
+      msg.includes('account not found') ||
+      msg.includes('invalid-email') ||
+      msg.includes('user-disabled') ||
+      msg.includes('too-many-requests')
     ) {
       return 'Please, Enter correct credential';
     }
@@ -240,6 +245,16 @@ const Login = ({ navigation }) => {
                 />
               </TouchableOpacity>
             </View>
+          )}
+
+          {inputType === 'email' && (
+            <TouchableOpacity
+              style={styles.forgotPassword}
+              onPress={() => navigation.navigate('ForgotPassword')}
+              disabled={isLoading}
+            >
+              <Text style={styles.forgotPasswordText}>Forgot Password?</Text>
+            </TouchableOpacity>
           )}
 
           {inputType === 'phone' && (
@@ -337,6 +352,12 @@ const Login = ({ navigation }) => {
             <Text style={styles.signUpText}>Sign Up</Text>
           </TouchableOpacity>
         </View>
+        <View style={styles.footerReset}>
+        <Text style={[styles.footerText, { marginTop: 10 }]}>Forgot password? </Text>
+          <TouchableOpacity onPress={() => navigation.navigate('ForgotPassword')} disabled={isLoading}>
+            <Text style={styles.signUpText}>Reset here</Text>
+          </TouchableOpacity>
+        </View>
       </ScrollView>
     </SafeAreaView>
   );
@@ -370,6 +391,7 @@ const styles = StyleSheet.create({
     color: '#333',
     marginTop: 20,
     marginBottom: 10,
+    textAlign: 'center',
   },
   subtitle: {
     fontSize: 16,
@@ -480,6 +502,13 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginTop: 20,
     flexWrap: 'wrap',
+  }, 
+  footerReset: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginTop: 0,
+    flexWrap: 'wrap',
   },
   footerText: {
     color: '#666',
@@ -492,6 +521,7 @@ const styles = StyleSheet.create({
     color: '#007AFF',
     fontSize: 14,
     fontWeight: 'bold',
+    textAlign: 'center',
   },
   sendOtpButton: {
     flex: 0.3,

@@ -87,6 +87,39 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
+  const checkAccountExists = async (identifier) => {
+    try {
+      // Use the same logic as Login screen to determine input type
+      const validateEmail = (email) => {
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        return emailRegex.test(email);
+      };
+
+      const validatePhone = (phone) => {
+        const phoneRegex = /^[+\d][\d\s\-\(\)]*$/;
+        const digitsOnly = (phone || '').replace(/\D/g, '');
+        return phoneRegex.test(phone) && digitsOnly.length >= 10;
+      };
+
+      const getInputType = (value) => {
+        const trimmed = (value || '').trim();
+        if (trimmed.length === 0) return 'email';
+        const digitsOnly = trimmed.replace(/\D/g, '');
+        if (validatePhone(trimmed) && digitsOnly.length >= 10) return 'phone';
+        if (validateEmail(trimmed)) return 'email';
+        return 'email';
+      };
+
+      const inputType = getInputType(identifier);
+      if (inputType === 'email') {
+        return await firebaseService.verifyAuthUserForEmail(identifier.trim().toLowerCase());
+      }
+      return await firebaseService.verifyAuthUserForPhone(identifier);
+    } catch (error) {
+      return { success: false, error: error.message };
+    }
+  };
+
   const register = async (name, identifier, password, isAdmin = false, secretKey = '', inputType = 'email', otp = '') => {
     try {
       // Validate admin secret key if registering as admin
@@ -152,23 +185,10 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
-  const verifyOTP = async (otp) => {
+  const verifyOTP = async (phoneNumber, otp) => {
     try {
-      if (!pendingUser) {
-        return { success: false, error: 'No pending registration found' };
-      }
-
-      // For now, we'll use a simple OTP verification
-      // In a real app, you'd implement Firebase Phone Auth or a custom OTP system
-      if (otp === '123456') { // Mock OTP for testing
-        // User is already created in Firebase, just update the state
-        setUser(pendingUser);
-        setIsAuthenticated(true);
-        setPendingUser(null);
-        return { success: true };
-      } else {
-        return { success: false, error: 'Invalid OTP' };
-      }
+      const result = await firebaseService.verifyOTP(phoneNumber, otp);
+      return result;
     } catch (error) {
       console.error('OTP verification error:', error);
       return { success: false, error: error.message };
@@ -181,12 +201,30 @@ export const AuthProvider = ({ children }) => {
       if (inputType === 'email') {
         result = await firebaseService.sendPasswordResetEmail(identifier);
       } else {
+        // For phone users, fallback to sending a reset email to the synthetic email
+        // we generate for phone-based accounts if that convention is used elsewhere.
+        // Otherwise, show a helpful message.
         result = await firebaseService.sendPasswordResetSMS(identifier);
       }
       
       return result;
     } catch (error) {
       console.error('Password reset error:', error);
+      return { success: false, error: error.message };
+    }
+  };
+
+  const changePasswordForPhone = async (phoneNumber, newPassword, otp) => {
+    try {
+      // Verify OTP first
+      const verify = await firebaseService.verifyOTP(phoneNumber, otp);
+      if (!verify.success) {
+        return { success: false, error: verify.error || 'Invalid OTP' };
+      }
+      // Update password on synthetic email account
+      const result = await firebaseService.updatePhoneAccountPassword(phoneNumber, newPassword);
+      return result;
+    } catch (error) {
       return { success: false, error: error.message };
     }
   };
@@ -261,9 +299,11 @@ export const AuthProvider = ({ children }) => {
     isAuthenticated,
     loading,
     login,
+    checkAccountExists,
     register,
     verifyOTP,
     resetPassword,
+    changePasswordForPhone,
     updateAdminSecretKey,
     logout,
     refreshUserData,

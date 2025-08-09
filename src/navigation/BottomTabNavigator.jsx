@@ -5,7 +5,7 @@ import Icon from 'react-native-vector-icons/Ionicons';
 // Import screens
 import Home from '../screens/Home';
 import Favourite from '../screens/Favourite';
-import Settings from '../screens/Settings';
+import SettingsNavigator from './SettingsNavigator';
 
 const Tab = createBottomTabNavigator();
 
@@ -20,7 +20,7 @@ const BottomTabNavigator = () => {
             iconName = focused ? 'home' : 'home-outline';
           } else if (route.name === 'Favourites') {
             iconName = focused ? 'heart' : 'heart-outline';
-          } else if (route.name === 'Settings') {
+          } else if (route.name === 'SettingsTab') {
             iconName = focused ? 'settings' : 'settings-outline';
           }
 
@@ -54,8 +54,8 @@ const BottomTabNavigator = () => {
         }}
       />
       <Tab.Screen 
-        name="Settings" 
-        component={Settings}
+        name="SettingsTab" 
+        component={SettingsNavigator}
         options={{
           title: 'Settings',
         }}

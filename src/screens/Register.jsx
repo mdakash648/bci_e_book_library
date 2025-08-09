@@ -38,16 +38,16 @@ const Register = ({ navigation }) => {
   };
 
   const validatePhone = (phone) => {
-    const phoneRegex = /^\+?[\d\s\-\(\)]+$/;
-    return phoneRegex.test(phone) && phone.replace(/\D/g, '').length >= 10;
+    const phoneRegex = /^[+\d][\d\s\-\(\)]*$/;
+    const digitsOnly = (phone || '').replace(/\D/g, '');
+    return phoneRegex.test(phone) && digitsOnly.length >= 10;
   };
 
   const getInputType = (value) => {
     const trimmed = (value || '').trim();
     if (trimmed.length === 0) return 'email';
-    const firstChar = trimmed.charAt(0);
-    if (/[0-9+]/.test(firstChar)) return 'phone';
-    if (validatePhone(trimmed)) return 'phone';
+    const digitsOnly = trimmed.replace(/\D/g, '');
+    if (validatePhone(trimmed) && digitsOnly.length >= 10) return 'phone';
     if (validateEmail(trimmed)) return 'email';
     return 'email';
   };
@@ -61,7 +61,8 @@ const Register = ({ navigation }) => {
   };
 
   const getKeyboardType = () => {
-    return inputType === 'phone' ? 'phone-pad' : 'email-address';
+    // Do not switch to numeric keypad for phone input
+    return inputType === 'phone' ? 'default' : 'email-address';
   };
 
   const handleSendOTP = async () => {
@@ -165,13 +166,13 @@ const Register = ({ navigation }) => {
 
   // Update input type when identifier changes
   const handleIdentifierChange = (value) => {
-    const detectedType = getInputType(value);
-    setInputType(detectedType);
-    if (detectedType === 'phone') {
-      const digitsOnly = (value || '').replace(/\D/g, '').slice(0, 11);
-      setIdentifier(digitsOnly);
+    const digitsOnly = (value || '').replace(/\D/g, '');
+    if (digitsOnly.length >= 10) {
+      setInputType('phone');
+      setIdentifier(digitsOnly.slice(0, 11));
       setOtpSent(false);
     } else {
+      setInputType('email');
       setIdentifier(value);
       setOtp('');
       setOtpSent(false);

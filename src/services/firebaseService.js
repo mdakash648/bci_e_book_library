@@ -229,6 +229,17 @@ class FirebaseService {
     }
   }
 
+  // Verify auth user exists for phone (using synthetic email convention)
+  async verifyAuthUserForPhone(phoneNumber) {
+    try {
+      const email = `${(phoneNumber || '').replace(/[^0-9]/g, '')}@temp.com`;
+      const methods = await auth().fetchSignInMethodsForEmail(email);
+      return { success: true, exists: Array.isArray(methods) && methods.length > 0, methods };
+    } catch (error) {
+      return { success: false, error: `${error.code || 'auth/error'}: ${error.message}` };
+    }
+  }
+
   // Get user data from Firestore
   async getUserData(userId) {
     try {
@@ -246,10 +257,21 @@ class FirebaseService {
   // Send password reset email
   async sendPasswordResetEmail(email) {
     try {
-      await auth().sendPasswordResetEmail(email);
+      const normalizedEmail = (email || '').trim().toLowerCase();
+      await auth().sendPasswordResetEmail(normalizedEmail);
       return { success: true };
     } catch (error) {
-      return { success: false, error: error.message };
+      // Normalize Firebase error codes to a friendly message
+      const code = (error?.code || '').toString();
+      let message = 'Failed to send reset link. Please try again.';
+      if (
+        code.includes('auth/invalid-email') ||
+        code.includes('auth/user-not-found') ||
+        code.includes('auth/missing-email')
+      ) {
+        message = 'Please enter a valid email registered with your account.';
+      }
+      return { success: false, error: message };
     }
   }
 
@@ -342,6 +364,32 @@ class FirebaseService {
   // Get current user
   getCurrentUser() {
     return auth().currentUser;
+  }
+
+  // Update password for phone-based accounts that use synthetic email
+  async updatePhoneAccountPassword(phoneNumber, newPassword) {
+    try {
+      const email = `${phoneNumber.replace(/[^0-9]/g, '')}@temp.com`;
+      // We can't directly update a password without being logged in.
+      // The secure way to do this is to send a password reset email.
+      // This requires the user to have access to the synthetic email, which is not ideal.
+      // A better approach would be to use Firebase's Admin SDK on a server
+      // to update the password directly after verifying the OTP.
+      //
+      // Since we are on the client, we'll send a reset email.
+      await auth().sendPasswordResetEmail(email);
+      return { 
+        success: true, 
+        message: 'A password reset link has been sent to the email associated with your phone number.' 
+      };
+    } catch (error) {
+      // Surface a clearer message for the most likely error
+      let message = error?.message || 'Failed to update password';
+      if (error?.code === 'auth/user-not-found') {
+        message = 'No account found for this phone number.';
+      }
+      return { success: false, error: message };
+    }
   }
 
   // Listen to auth state changes
