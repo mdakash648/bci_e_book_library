@@ -43,9 +43,13 @@ const Register = ({ navigation }) => {
   };
 
   const getInputType = (value) => {
-    if (validateEmail(value)) return 'email';
-    if (validatePhone(value)) return 'phone';
-    return 'unknown';
+    const trimmed = (value || '').trim();
+    if (trimmed.length === 0) return 'email';
+    const firstChar = trimmed.charAt(0);
+    if (/[0-9+]/.test(firstChar)) return 'phone';
+    if (validatePhone(trimmed)) return 'phone';
+    if (validateEmail(trimmed)) return 'email';
+    return 'email';
   };
 
   const getInputIcon = () => {
@@ -161,10 +165,16 @@ const Register = ({ navigation }) => {
 
   // Update input type when identifier changes
   const handleIdentifierChange = (value) => {
-    setIdentifier(value);
     const detectedType = getInputType(value);
-    if (detectedType !== 'unknown') {
-      setInputType(detectedType);
+    setInputType(detectedType);
+    if (detectedType === 'phone') {
+      const digitsOnly = (value || '').replace(/\D/g, '').slice(0, 11);
+      setIdentifier(digitsOnly);
+      setOtpSent(false);
+    } else {
+      setIdentifier(value);
+      setOtp('');
+      setOtpSent(false);
     }
   };
 
@@ -427,24 +437,24 @@ const styles = StyleSheet.create({
   logo: {
     width: 100,
     height: 100,
-    marginBottom: 10,
+    marginBottom: 0,
   },
   title: {
     fontSize: 28,
     fontWeight: 'bold',
     color: '#333',
-    marginTop: 20,
-    marginBottom: 10,
+    marginTop: 10,
+    marginBottom: 0,
     textAlign: 'center',
     flexWrap: 'wrap',
   },
   subtitle: {
-    fontSize: 16,
+    fontSize: 15,
     color: '#666',
     textAlign: 'center',
   },
   form: {
-    marginBottom: 30,
+    marginBottom: 10,
   },
   inputContainer: {
     flexDirection: 'row',

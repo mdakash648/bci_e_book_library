@@ -35,9 +35,12 @@ const Login = ({ navigation }) => {
   };
 
   const getInputType = (value) => {
-    if (!value) return 'email';
-    if (validateEmail(value)) return 'email';
-    if (validatePhone(value)) return 'phone';
+    const trimmed = (value || '').trim();
+    if (trimmed.length === 0) return 'email';
+    const firstChar = trimmed.charAt(0);
+    if (/[0-9+]/.test(firstChar)) return 'phone';
+    if (validatePhone(trimmed)) return 'phone';
+    if (validateEmail(trimmed)) return 'email';
     return 'email';
   };
 
@@ -136,24 +139,45 @@ const Login = ({ navigation }) => {
       if (result.success) {
         Alert.alert('Success', 'Login successful!');
       } else {
-        Alert.alert('Error', result.error || 'Login failed');
+        const friendly = getFriendlyLoginError(result.error);
+        Alert.alert('Error', friendly);
       }
     } catch (error) {
-      Alert.alert('Error', 'Login failed. Please try again.');
+      const friendly = getFriendlyLoginError(error?.message);
+      Alert.alert('Error', friendly);
     } finally {
       setIsLoading(false);
     }
   };
 
   const handleIdentifierChange = (value) => {
-    setIdentifier(value);
-    setOtpSent(false);
-    setOtp('');
-    setPassword('');
-    setAuthMethod('password');
+    const detectedType = getInputType(value);
+    if (detectedType === 'phone') {
+      const digitsOnly = (value || '').replace(/\D/g, '').slice(0, 11);
+      setIdentifier(digitsOnly);
+      setAuthMethod('password');
+    } else {
+      setIdentifier(value);
+      setOtp('');
+      setOtpSent(false);
+      setAuthMethod('password');
+    }
   };
 
   const inputType = getInputType(identifier);
+
+  const getFriendlyLoginError = (errorMsg) => {
+    const msg = (errorMsg || '').toLowerCase();
+    if (
+      msg.includes('invalid-credential') ||
+      msg.includes('wrong-password') ||
+      msg.includes('user-not-found') ||
+      msg.includes('account not found')
+    ) {
+      return 'Please, Enter correct credential';
+    }
+    return 'Login failed. Please try again.';
+  };
 
   return (
     <SafeAreaView style={styles.container}>
@@ -533,6 +557,7 @@ const styles = StyleSheet.create({
     paddingVertical: 8,
     paddingHorizontal: 12,
     marginTop: 10,
+    marginBottom: 20,
     alignSelf: 'center',
     borderWidth: 1,
     borderColor: '#007AFF',
