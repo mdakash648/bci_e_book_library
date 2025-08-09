@@ -1,4 +1,5 @@
-import React, { createContext, useState, useContext } from 'react';
+import React, { createContext, useState, useContext, useEffect } from 'react';
+import firebaseService from '../services/firebaseService';
 
 const AuthContext = createContext();
 
@@ -14,79 +15,153 @@ export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [pendingUser, setPendingUser] = useState(null);
+  const [loading, setLoading] = useState(true);
 
-  // TODO: Replace with actual admin secret key from Firebase/backend
-  const ADMIN_SECRET_KEY = 'admin123456';
+  // Listen to Firebase auth state changes
+  useEffect(() => {
+    const unsubscribe = firebaseService.onAuthStateChanged(async (firebaseUser) => {
+      if (firebaseUser) {
+        // Get additional user data from Firestore
+        const userDataResult = await firebaseService.getUserData(firebaseUser.uid);
+        
+        if (userDataResult.success) {
+          const completeUser = {
+            id: firebaseUser.uid,
+            email: firebaseUser.email || userDataResult.data.identifier,
+            phoneNumber: firebaseUser.phoneNumber,
+            ...userDataResult.data,
+          };
+          setUser(completeUser);
+          setIsAuthenticated(true);
+        } else {
+          // If no Firestore data, create basic user object
+          const basicUser = {
+            id: firebaseUser.uid,
+            email: firebaseUser.email || 'Unknown',
+            phoneNumber: firebaseUser.phoneNumber,
+            name: firebaseUser.displayName || 'User',
+            role: 'user', // Default to user role
+          };
+          setUser(basicUser);
+          setIsAuthenticated(true);
+        }
+      } else {
+        setUser(null);
+        setIsAuthenticated(false);
+      }
+      setLoading(false);
+    });
 
-  const login = async (identifier, password, inputType = 'email') => {
+    return () => unsubscribe();
+  }, []);
+
+  const login = async (identifier, password = '', otp = '') => {
     try {
-      // TODO: Implement Firebase authentication
-      console.log('Logging in with:', { identifier, password, inputType });
+      // Determine if identifier is email or phone
+      const isEmail = identifier.includes('@');
       
-      // Simulate successful login
-      const mockUser = {
-        id: '1',
-        identifier: identifier,
-        name: 'Test User',
-        role: 'user', // Default to user role
-        inputType: inputType,
-      };
-      
-      setUser(mockUser);
-      setIsAuthenticated(true);
-      return { success: true };
+      if (isEmail) {
+        // Email login - password required
+        if (!password) {
+          return { success: false, error: 'Password is required for email login' };
+        }
+        const result = await firebaseService.signInWithEmailAndPassword(identifier, password);
+        return result;
+      } else {
+        // Phone login - either OTP or password
+        if (!otp && !password) {
+          return { success: false, error: 'Please provide either OTP or password' };
+        }
+        
+        if (otp && password) {
+          return { success: false, error: 'Please use either OTP or password, not both' };
+        }
+        
+        // Use OTP if provided, otherwise use password
+        const result = await firebaseService.signInWithPhoneNumber(identifier, password, otp);
+        return result;
+      }
     } catch (error) {
       console.error('Login error:', error);
       return { success: false, error: error.message };
     }
   };
 
-  const register = async (name, identifier, password, isAdmin = false, secretKey = '', inputType = 'email') => {
+  const register = async (name, identifier, password, isAdmin = false, secretKey = '', inputType = 'email', otp = '') => {
     try {
-      // TODO: Implement Firebase registration
-      console.log('Registering with:', { name, identifier, password, isAdmin, secretKey, inputType });
-      
       // Validate admin secret key if registering as admin
       if (isAdmin) {
         if (!secretKey) {
           return { success: false, error: 'Admin secret key is required' };
         }
         
-        if (secretKey !== ADMIN_SECRET_KEY) {
+        // Validate against database
+        const isValidAdminKey = await firebaseService.validateAdminSecretKey(secretKey);
+        if (!isValidAdminKey) {
           return { success: false, error: 'Invalid admin secret key' };
         }
       }
+
+      // Create user account with Firebase
+      let result;
+      if (inputType === 'email') {
+        result = await firebaseService.createUserWithEmailAndPassword(identifier, password);
+      } else {
+        result = await firebaseService.createUserWithPhoneNumber(identifier, password, otp);
+      }
       
-      // Store pending user data for OTP verification
-      const pendingUserData = {
-        id: Date.now().toString(),
-        identifier: identifier,
-        name: name,
-        role: isAdmin ? 'admin' : 'user',
-        password: password, // In real app, this would be hashed
-        inputType: inputType,
-      };
-      
-      setPendingUser(pendingUserData);
-      return { success: true };
+      if (result.success) {
+        // Save additional user data to Firestore
+        const userData = {
+          name: name,
+          role: isAdmin ? 'admin' : 'user',
+          inputType: inputType,
+          identifier: identifier,
+          createdAt: new Date().toISOString(),
+        };
+        
+        const saveResult = await firebaseService.saveUserData(result.user.uid, userData);
+        
+        if (saveResult.success) {
+          // Refresh user data to ensure role is properly loaded
+          setTimeout(async () => {
+            await refreshUserData();
+          }, 1000); // Small delay to ensure Firestore data is available
+          return { success: true, user: result.user };
+        } else {
+          // Even if Firestore save fails, the user is created in Firebase Auth
+          return { success: true, user: result.user };
+        }
+      } else {
+        return { success: false, error: result.error };
+      }
     } catch (error) {
       console.error('Registration error:', error);
       return { success: false, error: error.message };
     }
   };
 
+  // Generate OTP for phone verification
+  const generateOTP = async (phoneNumber) => {
+    try {
+      const result = await firebaseService.generateOTP(phoneNumber);
+      return result;
+    } catch (error) {
+      console.error('Generate OTP error:', error);
+      return { success: false, error: error.message };
+    }
+  };
+
   const verifyOTP = async (otp) => {
     try {
-      // TODO: Implement actual OTP verification with Firebase
-      console.log('Verifying OTP:', otp);
-      
       if (!pendingUser) {
         return { success: false, error: 'No pending registration found' };
       }
 
-      // Simulate OTP verification (in real app, verify with backend)
+      // For now, we'll use a simple OTP verification
+      // In a real app, you'd implement Firebase Phone Auth or a custom OTP system
       if (otp === '123456') { // Mock OTP for testing
-        // Create the user after successful verification
+        // User is already created in Firebase, just update the state
         setUser(pendingUser);
         setIsAuthenticated(true);
         setPendingUser(null);
@@ -102,15 +177,14 @@ export const AuthProvider = ({ children }) => {
 
   const resetPassword = async (identifier, inputType = 'email') => {
     try {
-      // TODO: Implement Firebase password reset
-      console.log('Resetting password for:', { identifier, inputType });
+      let result;
+      if (inputType === 'email') {
+        result = await firebaseService.sendPasswordResetEmail(identifier);
+      } else {
+        result = await firebaseService.sendPasswordResetSMS(identifier);
+      }
       
-      // Simulate password reset (in real app, send email/SMS via Firebase)
-      await new Promise(resolve => setTimeout(resolve, 2000));
-      
-      // For testing purposes, always return success
-      // In real app, check if identifier exists in database
-      return { success: true };
+      return result;
     } catch (error) {
       console.error('Password reset error:', error);
       return { success: false, error: error.message };
@@ -119,18 +193,9 @@ export const AuthProvider = ({ children }) => {
 
   const updateAdminSecretKey = async (currentPassword, newSecretKey) => {
     try {
-      // TODO: Implement Firebase admin secret key update
-      console.log('Updating admin secret key:', { currentPassword, newSecretKey });
-      
-      // Validate current password (in real app, verify with Firebase)
+      // Validate current password
       if (!currentPassword) {
         return { success: false, error: 'Current password is required' };
-      }
-
-      // For testing purposes, accept any password
-      // In real app, verify the current password with Firebase
-      if (currentPassword.length < 6) {
-        return { success: false, error: 'Invalid current password' };
       }
 
       // Validate new secret key
@@ -138,36 +203,71 @@ export const AuthProvider = ({ children }) => {
         return { success: false, error: 'New secret key must be at least 6 characters long' };
       }
 
-      // Simulate update process
-      await new Promise(resolve => setTimeout(resolve, 1500));
+      // Update the admin secret key using Firebase service
+      const result = await firebaseService.updateAdminSecretKey(user?.id, newSecretKey);
       
-      // Update the admin secret key (in real app, update in Firebase)
-      // For now, we'll just log it
-      console.log('Admin secret key updated to:', newSecretKey);
-      
-      return { success: true };
+      return result;
     } catch (error) {
       console.error('Admin secret key update error:', error);
       return { success: false, error: error.message };
     }
   };
 
-  const logout = () => {
-    setUser(null);
-    setIsAuthenticated(false);
-    setPendingUser(null);
+  const logout = async () => {
+    try {
+      const result = await firebaseService.signOut();
+      if (result.success) {
+        setUser(null);
+        setIsAuthenticated(false);
+        return { success: true };
+      } else {
+        return { success: false, error: result.error };
+      }
+    } catch (error) {
+      console.error('Logout error:', error);
+      return { success: false, error: error.message };
+    }
+  };
+
+  // Refresh user data from Firestore
+  const refreshUserData = async () => {
+    try {
+      const currentUser = firebaseService.getCurrentUser();
+      if (currentUser) {
+        const userDataResult = await firebaseService.getUserData(currentUser.uid);
+        if (userDataResult.success) {
+          const updatedUser = {
+            id: currentUser.uid,
+            email: currentUser.email || userDataResult.data.identifier,
+            phoneNumber: currentUser.phoneNumber,
+            ...userDataResult.data,
+          };
+          setUser(updatedUser);
+          return { success: true, user: updatedUser };
+        } else {
+          return { success: false, error: userDataResult.error };
+        }
+      } else {
+        return { success: false, error: 'No current user' };
+      }
+    } catch (error) {
+      console.error('Refresh user data error:', error);
+      return { success: false, error: error.message };
+    }
   };
 
   const value = {
     user,
     isAuthenticated,
-    pendingUser,
+    loading,
     login,
     register,
     verifyOTP,
     resetPassword,
     updateAdminSecretKey,
     logout,
+    refreshUserData,
+    generateOTP,
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

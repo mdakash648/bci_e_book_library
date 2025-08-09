@@ -1,0 +1,47 @@
+{
+  "project_info": {
+    "project_number": "869110077398",
+    "project_id": "bci-e-book-library",
+    "storage_bucket": "bci-e-book-library.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:869110077398:android:d048c7ab917a8dd1463677",
+        "android_client_info": {
+          "package_name": "com.bci_e_book_library"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "869110077398-5cm29li7gs240a48tpffjim2bcc5gd1n.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.bci_e_book_library",
+            "certificate_hash": "d7a37c13e520844f6a1b8c32cb93e2527ec57135"
+          }
+        },
+        {
+          "client_id": "869110077398-7s9apln6ub0pp90p3grbl8efaabjemeh.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBK1vp_ohqygTWCah2pkz4dH8GJc1IuDY8"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "869110077398-7s9apln6ub0pp90p3grbl8efaabjemeh.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
