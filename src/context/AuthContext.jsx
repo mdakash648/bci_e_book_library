@@ -294,6 +294,18 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
+  const updateProfile = async (updates) => {
+    try {
+      const result = await firebaseService.updateUserProfile(user.id, updates);
+      if (result.success) {
+        await refreshUserData();
+      }
+      return result;
+    } catch (error) {
+      return { success: false, error: error.message };
+    }
+  };
+
   const value = {
     user,
     isAuthenticated,
@@ -308,6 +320,7 @@ export const AuthProvider = ({ children }) => {
     logout,
     refreshUserData,
     generateOTP,
+    updateProfile,
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

@@ -396,6 +396,57 @@ class FirebaseService {
   onAuthStateChanged(callback) {
     return auth().onAuthStateChanged(callback);
   }
+
+  // Update user profile
+  async updateUserProfile(userId, updates) {
+    try {
+      const { name, password, role, secretKey } = updates;
+      const user = auth().currentUser;
+
+      if (!user || user.uid !== userId) {
+        return { success: false, error: 'Authentication error' };
+      }
+
+      // Update password if provided
+      if (password) {
+        await user.updatePassword(password);
+      }
+
+      const firestoreUpdates = {
+        updatedAt: firestore.FieldValue.serverTimestamp(),
+      };
+
+      // Update name in Firestore
+      if (name) {
+        firestoreUpdates.name = name;
+      }
+
+      // Update role in Firestore
+      if (role) {
+        const userDataResult = await this.getUserData(userId);
+        if (userDataResult.success && userDataResult.data.role !== role) {
+          if (role === 'admin') {
+            if (!secretKey) {
+              return { success: false, error: 'Admin secret key is required to become an admin.' };
+            }
+            const isValid = await this.validateAdminSecretKey(secretKey);
+            if (!isValid) {
+              return { success: false, error: 'Invalid admin secret key.' };
+            }
+          }
+          firestoreUpdates.role = role;
+        }
+      }
+
+      if (Object.keys(firestoreUpdates).length > 1) { // more than just timestamp
+        await firestore().collection('users').doc(userId).update(firestoreUpdates);
+      }
+
+      return { success: true };
+    } catch (error) {
+      return { success: false, error: error.message };
+    }
+  }
 }
 
 export default new FirebaseService();

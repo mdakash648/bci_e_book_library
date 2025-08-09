@@ -9,15 +9,18 @@ import {
   Alert,
   TextInput,
   Modal,
+  Switch,
 } from 'react-native';
 import Icon from 'react-native-vector-icons/Ionicons';
 import { useNavigation } from '@react-navigation/native';
 import { useAuth } from '../context/AuthContext';
+import { useTheme } from '../context/ThemeContext';
 import firebaseService from '../services/firebaseService';
 
 const Settings = () => {
   const navigation = useNavigation();
   const { logout, user, refreshUserData } = useAuth();
+  const { theme, isDarkMode, toggleTheme } = useTheme();
   const [showSecretKeyModal, setShowSecretKeyModal] = useState(false);
   const [showViewKeyModal, setShowViewKeyModal] = useState(false);
   const [newSecretKey, setNewSecretKey] = useState('');
@@ -147,98 +150,132 @@ const Settings = () => {
 
   const isAdmin = user?.role === 'admin';
 
+  const getDisplayIdentifier = () => {
+    return (
+      user?.identifier ||
+      user?.phoneNumber ||
+      (user?.email?.endsWith('@temp.com') ? user.email.replace('@temp.com', '') : user?.email)
+    );
+  };
+
   return (
-    <SafeAreaView style={styles.container}>
-      <View style={styles.header}>
-        <Text style={styles.title}>Settings</Text>
-        <Text style={styles.subtitle}>Customize your experience</Text>
+    <SafeAreaView style={[styles.container, { backgroundColor: theme.background }]}>
+      <View style={[styles.header, { backgroundColor: theme.surface, borderBottomColor: theme.border }]}>
+        <Text style={[styles.title, { color: theme.primaryText }]}>Settings</Text>
+        <Text style={[styles.subtitle, { color: theme.secondaryText }]}>Customize your experience</Text>
+
         {user && (
-          <View style={styles.userInfoContainer}>
-            <Text style={styles.userInfo}>
-              Logged in as: {
-                user?.identifier ||
-                user?.phoneNumber ||
-                (user?.email?.endsWith('@temp.com')
-                  ? user.email.replace('@temp.com', '')
-                  : user?.email)
-              }
-            </Text>
-            <View style={styles.roleContainer}>
-              <Text style={[styles.roleText, { color: user.role === 'admin' ? '#FF6B35' : '#007AFF' }]}>
-                Role: {user.role?.toUpperCase() || 'USER'}
-              </Text>
-              <TouchableOpacity 
-                style={styles.refreshButton}
-                onPress={handleRefreshUserData}
-                disabled={refreshing}
-              >
-                <Icon 
-                  name="refresh" 
-                  size={16} 
-                  color="#007AFF" 
-                />
-              </TouchableOpacity>
+          <View style={[styles.profileCard, { backgroundColor: theme.card, shadowColor: theme.shadow }]}>
+            <View style={[styles.avatar, { backgroundColor: theme.avatarBackground }]}>
+              <Text style={[styles.avatarText, { color: theme.primary }]}>{(user?.name || 'U').charAt(0).toUpperCase()}</Text>
+            </View>
+            <View style={styles.profileInfo}>
+              <Text style={[styles.profileName, { color: theme.primaryText }]}>{user?.name || 'User'}</Text>
+              <Text style={[styles.profileId, { color: theme.secondaryText }]}>{getDisplayIdentifier()}</Text>
+              <View style={[
+                styles.roleBadge, 
+                { 
+                  backgroundColor: isAdmin ? theme.roleBadgeAdmin : theme.roleBadgeUser, 
+                  borderColor: isAdmin ? theme.roleBadgeAdminBorder : theme.roleBadgeUserBorder 
+                }
+              ]}>
+                <Text style={[
+                  styles.roleBadgeText, 
+                  { color: isAdmin ? theme.roleBadgeAdminText : theme.roleBadgeUserText }
+                ]}>
+                  {isAdmin ? 'ADMIN' : 'USER'}
+                </Text>
+              </View>
             </View>
           </View>
         )}
       </View>
-      
-      {/* About */}
-      <View>
-        <TouchableOpacity style={styles.settingItem}>
-          <Text style={styles.settingText}>Version</Text>
-          <Text style={styles.settingValue}>1.0.0</Text>
+
+      {/* Quick Actions */}
+      <View style={styles.quickActions}>
+        <TouchableOpacity style={[styles.quickAction, { backgroundColor: theme.card, shadowColor: theme.shadow }]} onPress={() => navigation.navigate('Profile')}>
+          <Icon name="person-circle-outline" size={22} color={theme.primary} />
+          <Text style={[styles.quickActionText, { color: theme.primaryText }]}>Profile</Text>
+        </TouchableOpacity>
+        <TouchableOpacity style={[styles.quickAction, { backgroundColor: theme.card, shadowColor: theme.shadow }]} onPress={() => navigation.navigate('Privacy')}>
+          <Icon name="lock-closed-outline" size={22} color={theme.primary} />
+          <Text style={[styles.quickActionText, { color: theme.primaryText }]}>Privacy</Text>
+        </TouchableOpacity>
+        <TouchableOpacity style={[styles.quickAction, { backgroundColor: theme.card, shadowColor: theme.shadow }]} onPress={handleLogout}>
+          <Icon name="log-out-outline" size={22} color={theme.error} />
+          <Text style={[styles.quickActionText, { color: theme.error }]}>Logout</Text>
         </TouchableOpacity>
       </View>
 
-      {/* Account */}
       <ScrollView style={styles.content}>
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Account</Text>
-          <TouchableOpacity style={styles.settingItem} onPress={() => navigation.navigate('Profile')}>
-            <Text style={styles.settingText}>Profile</Text>
-            <Text style={styles.settingArrow}>›</Text>
+        {/* Appearance */}
+        <View style={[styles.card, { backgroundColor: theme.card, shadowColor: theme.shadow }]}>
+          <Text style={[styles.cardTitle, { color: theme.primaryText }]}>Appearance</Text>
+          <View style={[styles.rowItem, { borderTopColor: theme.separator }]}>
+            <View style={styles.rowLeft}>
+              <Icon name={isDarkMode ? "moon" : "sunny"} size={20} color={theme.primary} style={styles.rowIcon} />
+              <Text style={[styles.rowText, { color: theme.primaryText }]}>Dark Mode</Text>
+            </View>
+            <Switch
+              value={isDarkMode}
+              onValueChange={toggleTheme}
+              trackColor={{ false: theme.separator, true: theme.primary }}
+              thumbColor={isDarkMode ? theme.surface : theme.surface}
+              ios_backgroundColor={theme.separator}
+            />
+          </View>
+        </View>
+
+        {/* Account */}
+        <View style={[styles.card, { backgroundColor: theme.card, shadowColor: theme.shadow }]}>
+          <Text style={[styles.cardTitle, { color: theme.primaryText }]}>Account</Text>
+          <TouchableOpacity style={[styles.rowItem, { borderTopColor: theme.separator }]} onPress={() => navigation.navigate('Profile')}>
+            <View style={styles.rowLeft}>
+              <Icon name="id-card-outline" size={20} color={theme.primary} style={styles.rowIcon} />
+              <Text style={[styles.rowText, { color: theme.primaryText }]}>Profile</Text>
+            </View>
+            <Icon name="chevron-forward" size={20} color={theme.tertiaryText} />
           </TouchableOpacity>
-          <TouchableOpacity style={styles.settingItem}>
-            <Text style={styles.settingText}>Change Password</Text>
-            <Text style={styles.settingArrow}>›</Text>
-          </TouchableOpacity>
-          <TouchableOpacity style={styles.settingItem}>
-            <Text style={styles.settingText}>Privacy</Text>
-            <Text style={styles.settingArrow}>›</Text>
+          <TouchableOpacity style={[styles.rowItem, { borderTopColor: theme.separator }]} onPress={() => navigation.navigate('Privacy')}>
+            <View style={styles.rowLeft}>
+              <Icon name="shield-checkmark-outline" size={20} color={theme.primary} style={styles.rowIcon} />
+              <Text style={[styles.rowText, { color: theme.primaryText }]}>Privacy</Text>
+            </View>
+            <Icon name="chevron-forward" size={20} color={theme.tertiaryText} />
           </TouchableOpacity>
         </View>
 
         {/* Admin Settings */}
         {isAdmin && (
-          <View style={styles.section}>
-            <Text style={styles.sectionTitle}>Admin Settings</Text>
-            <TouchableOpacity 
-              style={styles.settingItem}
-              onPress={handleViewSecretKey}
-            >
-              <Icon name="eye-outline" size={20} color="#007AFF" style={styles.settingIcon} />
-              <Text style={styles.settingText}>View Current Secret Key</Text>
-              <Text style={styles.settingArrow}>›</Text>
+          <View style={[styles.card, { backgroundColor: theme.card, shadowColor: theme.shadow }]}>
+            <Text style={[styles.cardTitle, { color: theme.primaryText }]}>Admin Settings</Text>
+            <TouchableOpacity style={[styles.rowItem, { borderTopColor: theme.separator }]} onPress={handleViewSecretKey}>
+              <View style={styles.rowLeft}>
+                <Icon name="eye-outline" size={20} color={theme.accent} style={styles.rowIcon} />
+                <Text style={[styles.rowText, { color: theme.primaryText }]}>View Current Secret Key</Text>
+              </View>
+              <Icon name="chevron-forward" size={20} color={theme.tertiaryText} />
             </TouchableOpacity>
-            <TouchableOpacity 
-              style={styles.settingItem}
-              onPress={() => setShowSecretKeyModal(true)}
-            >
-              <Icon name="key-outline" size={20} color="#007AFF" style={styles.settingIcon} />
-              <Text style={styles.settingText}>Update Admin Secret Key</Text>
-              <Text style={styles.settingArrow}>›</Text>
+            <TouchableOpacity style={[styles.rowItem, { borderTopColor: theme.separator }]} onPress={() => setShowSecretKeyModal(true)}>
+              <View style={styles.rowLeft}>
+                <Icon name="key-outline" size={20} color={theme.accent} style={styles.rowIcon} />
+                <Text style={[styles.rowText, { color: theme.primaryText }]}>Update Admin Secret Key</Text>
+              </View>
+              <Icon name="chevron-forward" size={20} color={theme.tertiaryText} />
             </TouchableOpacity>
           </View>
         )}
 
-        {/* Account Actions */}
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Account Actions</Text>
-          <TouchableOpacity style={styles.logoutButton} onPress={handleLogout}>
-            <Icon name="log-out-outline" size={20} color="#FF3B30" style={styles.logoutIcon} />
-            <Text style={styles.logoutText}>Logout</Text>
-          </TouchableOpacity>
+        {/* About */}
+        <View style={[styles.card, { backgroundColor: theme.card, shadowColor: theme.shadow }]}>
+          <Text style={[styles.cardTitle, { color: theme.primaryText }]}>About</Text>
+          <View style={[styles.rowItem, { borderTopColor: theme.separator }]}>
+            <View style={styles.rowLeft}>
+              <Icon name="information-circle-outline" size={20} color={theme.primary} style={styles.rowIcon} />
+              <Text style={[styles.rowText, { color: theme.primaryText }]}>Version</Text>
+            </View>
+            <Text style={[styles.versionText, { color: theme.secondaryText }]}>1.0.0</Text>
+          </View>
         </View>
       </ScrollView>
 
@@ -249,27 +286,27 @@ const Settings = () => {
         transparent={true}
         onRequestClose={() => setShowViewKeyModal(false)}
       >
-        <View style={styles.modalOverlay}>
-          <View style={styles.modalContent}>
-            <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>Current Admin Secret Key</Text>
+        <View style={[styles.modalOverlay, { backgroundColor: 'rgba(0, 0, 0, 0.5)' }]}>
+          <View style={[styles.modalContent, { backgroundColor: theme.surface }]}>
+            <View style={[styles.modalHeader, { borderBottomColor: theme.border }]}>
+              <Text style={[styles.modalTitle, { color: theme.primaryText }]}>Current Admin Secret Key</Text>
               <TouchableOpacity
                 onPress={() => setShowViewKeyModal(false)}
                 disabled={isLoading}
               >
-                <Icon name="close" size={24} color="#666" />
+                <Icon name="close" size={24} color={theme.secondaryText} />
               </TouchableOpacity>
             </View>
 
             <View style={styles.modalBody}>
-              <Text style={styles.modalSubtitle}>
+              <Text style={[styles.modalSubtitle, { color: theme.secondaryText }]}>
                 This is the current secret key used for admin registration.
               </Text>
 
-              <View style={styles.keyDisplayContainer}>
-                <Text style={styles.keyLabel}>Secret Key:</Text>
+              <View style={[styles.keyDisplayContainer, { backgroundColor: theme.inputBackground, borderColor: theme.inputBorder }]}>
+                <Text style={[styles.keyLabel, { color: theme.primaryText }]}>Secret Key:</Text>
                 <View style={styles.keyValueContainer}>
-                  <Text style={styles.keyValue}>
+                  <Text style={[styles.keyValue, { color: theme.primaryText }]}>
                     {showCurrentSecretKey ? currentSecretKey : '••••••••••••••••'}
                   </Text>
                   <TouchableOpacity
@@ -279,23 +316,23 @@ const Settings = () => {
                     <Icon
                       name={showCurrentSecretKey ? 'eye-outline' : 'eye-off-outline'}
                       size={20}
-                      color="#666"
+                      color={theme.secondaryText}
                     />
                   </TouchableOpacity>
                 </View>
               </View>
 
               {lastUpdatedBy && (
-                <View style={styles.lastUpdatedContainer}>
-                  <Text style={styles.lastUpdatedLabel}>Last Updated By:</Text>
-                  <Text style={styles.lastUpdatedName}>{lastUpdatedBy.name}</Text>
-                  <Text style={styles.lastUpdatedEmail}>{lastUpdatedBy.email}</Text>
+                <View style={[styles.lastUpdatedContainer, { backgroundColor: theme.inputBackground, borderColor: theme.inputBorder }]}>
+                  <Text style={[styles.lastUpdatedLabel, { color: theme.primaryText }]}>Last Updated By:</Text>
+                  <Text style={[styles.lastUpdatedName, { color: theme.primary }]}>{lastUpdatedBy.name}</Text>
+                  <Text style={[styles.lastUpdatedEmail, { color: theme.secondaryText }]}>{lastUpdatedBy.email}</Text>
                 </View>
               )}
 
               <View style={styles.modalButtons}>
                 <TouchableOpacity
-                  style={styles.resetButton}
+                  style={[styles.resetButton, { backgroundColor: theme.error }]}
                   onPress={handleResetToDefault}
                   disabled={isLoading}
                 >
@@ -304,11 +341,11 @@ const Settings = () => {
                   </Text>
                 </TouchableOpacity>
                 <TouchableOpacity
-                  style={styles.cancelButton}
+                  style={[styles.cancelButton, { backgroundColor: theme.inputBackground, borderColor: theme.inputBorder }]}
                   onPress={() => setShowViewKeyModal(false)}
                   disabled={isLoading}
                 >
-                  <Text style={styles.cancelButtonText}>Close</Text>
+                  <Text style={[styles.cancelButtonText, { color: theme.secondaryText }]}>Close</Text>
                 </TouchableOpacity>
               </View>
             </View>
@@ -323,28 +360,29 @@ const Settings = () => {
         transparent={true}
         onRequestClose={() => setShowSecretKeyModal(false)}
       >
-        <View style={styles.modalOverlay}>
-          <View style={styles.modalContent}>
-            <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>Update Admin Secret Key</Text>
+        <View style={[styles.modalOverlay, { backgroundColor: 'rgba(0, 0, 0, 0.5)' }]}>
+          <View style={[styles.modalContent, { backgroundColor: theme.surface }]}>
+            <View style={[styles.modalHeader, { borderBottomColor: theme.border }]}>
+              <Text style={[styles.modalTitle, { color: theme.primaryText }]}>Update Admin Secret Key</Text>
               <TouchableOpacity
                 onPress={() => setShowSecretKeyModal(false)}
                 disabled={isLoading}
               >
-                <Icon name="close" size={24} color="#666" />
+                <Icon name="close" size={24} color={theme.secondaryText} />
               </TouchableOpacity>
             </View>
 
             <View style={styles.modalBody}>
-              <Text style={styles.modalSubtitle}>
+              <Text style={[styles.modalSubtitle, { color: theme.secondaryText }]}>
                 Enter a new secret key for admin registration. The key must be at least 6 characters long.
               </Text>
 
-              <View style={styles.inputContainer}>
-                <Icon name="key-outline" size={20} color="#666" style={styles.inputIcon} />
+              <View style={[styles.inputContainer, { backgroundColor: theme.inputBackground, borderColor: theme.inputBorder }]}>
+                <Icon name="key-outline" size={20} color={theme.secondaryText} style={styles.inputIcon} />
                 <TextInput
-                  style={styles.input}
+                  style={[styles.input, { color: theme.primaryText }]}
                   placeholder="New Secret Key"
+                  placeholderTextColor={theme.placeholderText}
                   value={newSecretKey}
                   onChangeText={setNewSecretKey}
                   secureTextEntry={!showNewSecretKey}
@@ -359,21 +397,21 @@ const Settings = () => {
                   <Icon
                     name={showNewSecretKey ? 'eye-outline' : 'eye-off-outline'}
                     size={20}
-                    color="#666"
+                    color={theme.secondaryText}
                   />
                 </TouchableOpacity>
               </View>
 
               <View style={styles.modalButtons}>
                 <TouchableOpacity
-                  style={styles.cancelButton}
+                  style={[styles.cancelButton, { backgroundColor: theme.inputBackground, borderColor: theme.inputBorder }]}
                   onPress={() => setShowSecretKeyModal(false)}
                   disabled={isLoading}
                 >
-                  <Text style={styles.cancelButtonText}>Cancel</Text>
+                  <Text style={[styles.cancelButtonText, { color: theme.secondaryText }]}>Cancel</Text>
                 </TouchableOpacity>
                 <TouchableOpacity
-                  style={[styles.updateButton, isLoading && styles.updateButtonDisabled]}
+                  style={[styles.updateButton, { backgroundColor: theme.primary }, isLoading && { backgroundColor: theme.tertiaryText }]}
                   onPress={handleUpdateSecretKey}
                   disabled={isLoading}
                 >
@@ -393,28 +431,134 @@ const Settings = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f5f5f5',
   },
   header: {
     padding: 20,
-    backgroundColor: '#fff',
+    paddingTop: 40,
     borderBottomWidth: 1,
-    borderBottomColor: '#e0e0e0',
   },
   title: {
     fontSize: 28,
     fontWeight: 'bold',
-    color: '#333',
     marginBottom: 5,
   },
   subtitle: {
-    fontSize: 16,
-    color: '#666',
+    fontSize: 14,
     marginBottom: 10,
   },
+  profileCard: {
+    marginTop: 12,
+    borderRadius: 16,
+    padding: 16,
+    flexDirection: 'row',
+    alignItems: 'center',
+    shadowOpacity: 0.06,
+    shadowOffset: { width: 0, height: 2 },
+    shadowRadius: 6,
+    elevation: 2,
+  },
+  avatar: {
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  avatarText: {
+    fontSize: 22,
+    fontWeight: 'bold',
+  },
+  profileInfo: {
+    flex: 1,
+    marginLeft: 14,
+  },
+  profileName: {
+    fontSize: 18,
+    fontWeight: '600',
+  },
+  profileId: {
+    fontSize: 13,
+    marginTop: 2,
+  },
+  roleBadge: {
+    marginTop: 8,
+    alignSelf: 'flex-start',
+    borderWidth: 1,
+    borderRadius: 999,
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+  },
+  roleBadgeText: {
+    fontSize: 12,
+    fontWeight: '700',
+  },
+  quickActions: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    paddingHorizontal: 16,
+    marginTop: 12,
+    marginBottom: 12,
+  },
+  quickAction: {
+    flex: 1,
+    marginHorizontal: 6,
+    borderRadius: 14,
+    paddingVertical: 12,
+    alignItems: 'center',
+    shadowOpacity: 0.05,
+    shadowOffset: { width: 0, height: 1 },
+    shadowRadius: 3,
+    elevation: 1,
+  },
+  quickActionText: {
+    marginTop: 6,
+    fontSize: 12,
+    fontWeight: '500',
+  },
+  content: {
+    flex: 1,
+  },
+  card: {
+    marginHorizontal: 16,
+    marginTop: 16,
+    borderRadius: 16,
+    paddingVertical: 8,
+    shadowOpacity: 0.05,
+    shadowOffset: { width: 0, height: 2 },
+    shadowRadius: 6,
+    elevation: 2,
+  },
+  cardTitle: {
+    fontSize: 16,
+    fontWeight: '700',
+    paddingHorizontal: 16,
+    paddingTop: 10,
+    paddingBottom: 6,
+  },
+  rowItem: {
+    paddingHorizontal: 16,
+    paddingVertical: 14,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    borderTopWidth: 1,
+  },
+  rowLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  rowIcon: {
+    marginRight: 12,
+  },
+  rowText: {
+    fontSize: 15,
+  },
+  versionText: {
+    fontSize: 14,
+  },
+  // Legacy styles kept for modals & forms
   userInfo: {
     fontSize: 14,
-    color: '#007AFF',
     fontStyle: 'italic',
   },
   userInfoContainer: {
@@ -433,71 +577,56 @@ const styles = StyleSheet.create({
     padding: 5,
     marginLeft: 10,
   },
-  content: {
-    flex: 1,
-  },
   section: {
     marginTop: 15,
   },
   sectionTitle: {
     fontSize: 18,
     fontWeight: 'bold',
-    color: '#333',
     marginBottom: 10,
     marginLeft: 20,
   },
   settingItem: {
-    backgroundColor: '#fff',
     paddingHorizontal: 20,
     paddingVertical: 15,
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
     borderBottomWidth: 1,
-    borderBottomColor: '#f0f0f0',
   },
   settingIcon: {
     marginRight: 12,
   },
   settingText: {
     fontSize: 16,
-    color: '#333',
     flex: 1,
   },
   settingValue: {
     fontSize: 16,
-    color: '#666',
   },
   settingArrow: {
     fontSize: 18,
-    color: '#ccc',
   },
   logoutButton: {
-    backgroundColor: '#fff',
     paddingHorizontal: 20,
     paddingVertical: 15,
     flexDirection: 'row',
     alignItems: 'center',
     borderBottomWidth: 1,
-    borderBottomColor: '#f0f0f0',
   },
   logoutIcon: {
     marginRight: 12,
   },
   logoutText: {
     fontSize: 16,
-    color: '#FF3B30',
     fontWeight: '500',
   },
-  // Modal Styles
   modalOverlay: {
     flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
     justifyContent: 'center',
     alignItems: 'center',
   },
   modalContent: {
-    backgroundColor: '#fff',
     borderRadius: 16,
     width: '90%',
     maxWidth: 400,
@@ -509,34 +638,28 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     padding: 20,
     borderBottomWidth: 1,
-    borderBottomColor: '#e0e0e0',
   },
   modalTitle: {
     fontSize: 20,
     fontWeight: 'bold',
-    color: '#333',
   },
   modalBody: {
     padding: 20,
   },
   modalSubtitle: {
     fontSize: 14,
-    color: '#666',
     marginBottom: 20,
     lineHeight: 20,
   },
   keyDisplayContainer: {
-    backgroundColor: '#f8f9fa',
     borderRadius: 12,
     padding: 16,
     marginBottom: 20,
     borderWidth: 1,
-    borderColor: '#e0e0e0',
   },
   keyLabel: {
     fontSize: 14,
     fontWeight: 'bold',
-    color: '#333',
     marginBottom: 8,
   },
   keyValueContainer: {
@@ -547,19 +670,16 @@ const styles = StyleSheet.create({
   keyValue: {
     fontSize: 16,
     fontFamily: 'monospace',
-    color: '#333',
     flex: 1,
   },
   inputContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#f8f9fa',
     borderRadius: 12,
     marginBottom: 16,
     paddingHorizontal: 16,
     paddingVertical: 12,
     borderWidth: 1,
-    borderColor: '#e0e0e0',
   },
   inputIcon: {
     marginRight: 12,
@@ -567,7 +687,6 @@ const styles = StyleSheet.create({
   input: {
     flex: 1,
     fontSize: 16,
-    color: '#333',
   },
   eyeIcon: {
     padding: 8,
@@ -579,29 +698,22 @@ const styles = StyleSheet.create({
   },
   cancelButton: {
     flex: 1,
-    backgroundColor: '#f8f9fa',
     borderRadius: 12,
     paddingVertical: 16,
     alignItems: 'center',
     marginRight: 10,
     borderWidth: 1,
-    borderColor: '#e0e0e0',
   },
   cancelButtonText: {
     fontSize: 16,
-    color: '#666',
     fontWeight: '500',
   },
   updateButton: {
     flex: 1,
-    backgroundColor: '#007AFF',
     borderRadius: 12,
     paddingVertical: 16,
     alignItems: 'center',
     marginLeft: 10,
-  },
-  updateButtonDisabled: {
-    backgroundColor: '#ccc',
   },
   updateButtonText: {
     fontSize: 16,
@@ -610,7 +722,6 @@ const styles = StyleSheet.create({
   },
   resetButton: {
     flex: 1,
-    backgroundColor: '#dc3545',
     borderRadius: 12,
     paddingVertical: 16,
     alignItems: 'center',
@@ -622,28 +733,23 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
   },
   lastUpdatedContainer: {
-    backgroundColor: '#f8f9fa',
     borderRadius: 12,
     padding: 16,
     marginTop: 10,
     borderWidth: 1,
-    borderColor: '#e0e0e0',
   },
   lastUpdatedLabel: {
     fontSize: 14,
     fontWeight: 'bold',
-    color: '#333',
     marginBottom: 4,
   },
   lastUpdatedName: {
     fontSize: 16,
-    color: '#007AFF',
     fontWeight: '500',
     marginBottom: 2,
   },
   lastUpdatedEmail: {
     fontSize: 14,
-    color: '#666',
   },
 });
 
