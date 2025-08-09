@@ -187,13 +187,6 @@ const Login = ({ navigation }) => {
   return (
     <SafeAreaView style={styles.container}>
       <ScrollView contentContainerStyle={styles.scrollContent}>
-        <TouchableOpacity
-          style={styles.backButton}
-          onPress={() => navigation.goBack()}
-        >
-          <Icon name="arrow-back" size={24} color="#333" />
-        </TouchableOpacity>
-
         <View style={styles.header}>
           <Image
             source={require('../../asset/logo/logo.png')}
@@ -597,23 +590,6 @@ const styles = StyleSheet.create({
     color: '#007AFF',
     textAlign: 'center',
     fontWeight: '500',
-  },
-  backButton: {
-    position: 'absolute',
-    top: 45,
-    left: 20,
-    zIndex: 10,
-    padding: 12,
-    backgroundColor: 'rgba(255, 255, 255, 0.9)',
-    borderRadius: 20,
-    shadowColor: '#000',
-    shadowOffset: {
-      width: 0,
-      height: 2,
-    },
-    shadowOpacity: 0.1,
-    shadowRadius: 3.84,
-    elevation: 5,
   },
 });
 
