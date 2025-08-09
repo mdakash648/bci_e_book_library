@@ -72,7 +72,21 @@ const Login = ({ navigation }) => {
     try {
       const result = await generateOTP(identifier);
       if (result.success) {
-        Alert.alert('OTP Sent', `Your OTP is: ${result.otp}`);
+        Alert.alert(
+          'OTP Sent',
+          `Your OTP is: ${result.otp}`,
+          [
+            {
+              text: 'Auto Fill',
+              onPress: () => {
+                setOtp(result.otp);
+                setAuthMethod('otp');
+                setOtpSent(true);
+              },
+            },
+            { text: 'OK', style: 'cancel' },
+          ]
+        );
         setOtpSent(true);
         setAuthMethod('otp');
       } else {

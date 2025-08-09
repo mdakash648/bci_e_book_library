@@ -53,7 +53,7 @@ const Register = ({ navigation }) => {
   };
 
   const getInputPlaceholder = () => {
-    return inputType === 'phone' ? 'Enter your phone number' : 'Enter your email address';
+    return 'Enter your email / phone';
   };
 
   const getKeyboardType = () => {
@@ -70,7 +70,20 @@ const Register = ({ navigation }) => {
     try {
       const result = await generateOTP(identifier);
       if (result.success) {
-        Alert.alert('OTP Sent', `Your OTP is: ${result.otp}`);
+        Alert.alert(
+          'OTP Sent',
+          `Your OTP is: ${result.otp}`,
+          [
+            {
+              text: 'Auto Fill',
+              onPress: () => {
+                setOtp(result.otp);
+                setOtpSent(true);
+              },
+            },
+            { text: 'OK', style: 'cancel' },
+          ]
+        );
         setOtpSent(true);
       } else {
         Alert.alert('Error', result.error || 'Failed to send OTP');
