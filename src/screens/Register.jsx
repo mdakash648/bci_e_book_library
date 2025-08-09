@@ -9,6 +9,7 @@ import {
   TextInput,
   Alert,
   Switch,
+  Image,
 } from 'react-native';
 import Icon from 'react-native-vector-icons/Ionicons';
 import { useAuth } from '../context/AuthContext';
@@ -175,7 +176,11 @@ const Register = ({ navigation }) => {
         </TouchableOpacity>
 
         <View style={styles.header}>
-          <Icon name="library" size={80} color="#007AFF" />
+          <Image
+            source={require('../../asset/logo/logo.png')}
+            style={styles.logo}
+            resizeMode="contain"
+          />
           <Text style={styles.title}>Create Account</Text>
           <Text style={styles.subtitle}>Join our e-book library community</Text>
         </View>
@@ -405,6 +410,11 @@ const styles = StyleSheet.create({
     marginTop: 60,
     marginBottom: 40,
     paddingHorizontal: 20,
+  },
+  logo: {
+    width: 100,
+    height: 100,
+    marginBottom: 10,
   },
   title: {
     fontSize: 28,

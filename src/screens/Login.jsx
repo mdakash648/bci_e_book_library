@@ -8,6 +8,7 @@ import {
   Alert,
   SafeAreaView,
   ScrollView,
+  Image,
 } from 'react-native';
 import Icon from 'react-native-vector-icons/Ionicons';
 import { useAuth } from '../context/AuthContext';
@@ -151,6 +152,11 @@ const Login = ({ navigation }) => {
         </TouchableOpacity>
 
         <View style={styles.header}>
+          <Image
+            source={require('../../asset/logo/logo.png')}
+            style={styles.logo}
+            resizeMode="contain"
+          />
           <Text style={styles.title}>Welcome Back!</Text>
           <Text style={styles.subtitle}>Sign in to your account</Text>
         </View>
@@ -315,6 +321,10 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginTop: 60,
     marginBottom: 40,
+  },
+  logo: {
+    width: 100,
+    height: 100,
   },
   title: {
     fontSize: 28,
