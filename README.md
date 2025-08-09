@@ -5,7 +5,8 @@ This is a new [**React Native**](https://reactnative.dev) project, bootstrapped 
 > **Note**: Make sure you have completed the [Set Up Your Environment](https://reactnative.dev/docs/set-up-your-environment) guide before proceeding.
 
 ## Step 1: how to start
-1. download this application use git clone https://github.com/mdakash648/bci_e_book_library
+1. download this application use
+``sh git clone https://github.com/mdakash648/bci_e_book_library ```
 2. open cmd on clone folder
 3. install all dependency file 
 ```sh
