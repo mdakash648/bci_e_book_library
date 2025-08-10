@@ -15,7 +15,7 @@ import Icon from 'react-native-vector-icons/Ionicons';
 import { useAuth } from '../context/AuthContext';
 
 const Register = ({ navigation }) => {
-  const { register, generateOTP } = useAuth();
+  const { register, generateOTP, signInWithGoogle } = useAuth();
   const [name, setName] = useState('');
   const [identifier, setIdentifier] = useState('');
   const [password, setPassword] = useState('');
@@ -176,6 +176,22 @@ const Register = ({ navigation }) => {
       setIdentifier(value);
       setOtp('');
       setOtpSent(false);
+    }
+  };
+
+  const handleGoogleSignIn = async () => {
+    setIsLoading(true);
+    try {
+      const result = await signInWithGoogle();
+      if (result.success) {
+        Alert.alert('Success', 'Successfully signed in with Google!');
+      } else {
+        Alert.alert('Error', result.error || 'Google Sign-In failed');
+      }
+    } catch (error) {
+      Alert.alert('Error', 'Google Sign-In failed. Please try again.');
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -385,6 +401,23 @@ const Register = ({ navigation }) => {
             <Text style={styles.registerButtonText}>
               {isLoading ? 'Creating Account...' : 'Create Account'}
             </Text>
+          </TouchableOpacity>
+
+          {/* Divider */}
+          <View style={styles.divider}>
+            <View style={styles.dividerLine} />
+            <Text style={styles.dividerText}>OR</Text>
+            <View style={styles.dividerLine} />
+          </View>
+
+          {/* Google Sign-In Button */}
+          <TouchableOpacity
+            style={[styles.googleButton, isLoading && styles.googleButtonDisabled]}
+            onPress={handleGoogleSignIn}
+            disabled={isLoading}
+          >
+            <Icon name="logo-google" size={20} color="#DB4437" />
+            <Text style={styles.googleButtonText}>Continue with Google</Text>
           </TouchableOpacity>
         </View>
 
@@ -632,6 +665,50 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.3,
     shadowRadius: 8,
     elevation: 8,
+  },
+  divider: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginVertical: 20,
+  },
+  dividerLine: {
+    flex: 1,
+    height: 1,
+    backgroundColor: '#e0e0e0',
+  },
+  dividerText: {
+    marginHorizontal: 16,
+    color: '#666',
+    fontSize: 14,
+  },
+  googleButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#fff',
+    borderRadius: 12,
+    paddingVertical: 16,
+    paddingHorizontal: 20,
+    borderWidth: 1,
+    borderColor: '#e0e0e0',
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.1,
+    shadowRadius: 3.84,
+    elevation: 5,
+  },
+  googleButtonDisabled: {
+    backgroundColor: '#f5f5f5',
+    borderColor: '#ccc',
+  },
+  googleButtonText: {
+    marginLeft: 12,
+    fontSize: 16,
+    color: '#333',
+    fontWeight: '500',
   },
 });
 

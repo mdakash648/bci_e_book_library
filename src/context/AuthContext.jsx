@@ -1,5 +1,6 @@
 import React, { createContext, useState, useContext, useEffect } from 'react';
 import firebaseService from '../services/firebaseService';
+import googleSignInService from '../services/googleSignInService';
 
 const AuthContext = createContext();
 
@@ -253,6 +254,9 @@ export const AuthProvider = ({ children }) => {
 
   const logout = async () => {
     try {
+      // Sign out from Google if user was signed in with Google
+      await googleSignInService.signOut();
+      
       const result = await firebaseService.signOut();
       if (result.success) {
         setUser(null);
@@ -306,6 +310,40 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
+  // Google Sign-In method
+  const signInWithGoogle = async () => {
+    try {
+      const result = await googleSignInService.signIn();
+      
+      if (result.success) {
+        // Check if this is a new user
+        const isNewUser = result.additionalUserInfo?.isNewUser;
+        
+        if (isNewUser) {
+          // Save additional user data to Firestore for new users
+          const userData = {
+            name: result.user.displayName || 'Google User',
+            email: result.user.email,
+            role: 'user',
+            inputType: 'google',
+            identifier: result.user.email,
+            createdAt: new Date().toISOString(),
+            photoURL: result.user.photoURL,
+          };
+          
+          await firebaseService.saveUserData(result.user.uid, userData);
+        }
+        
+        return { success: true, user: result.user, isNewUser };
+      } else {
+        return { success: false, error: result.error };
+      }
+    } catch (error) {
+      console.error('Google Sign-In error:', error);
+      return { success: false, error: error.message || 'Google Sign-In failed' };
+    }
+  };
+
   const value = {
     user,
     isAuthenticated,
@@ -321,6 +359,7 @@ export const AuthProvider = ({ children }) => {
     refreshUserData,
     generateOTP,
     updateProfile,
+    signInWithGoogle,
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

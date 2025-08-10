@@ -14,7 +14,7 @@ import Icon from 'react-native-vector-icons/Ionicons';
 import { useAuth } from '../context/AuthContext';
 
 const Login = ({ navigation }) => {
-  const { login, generateOTP, checkAccountExists } = useAuth();
+  const { login, generateOTP, checkAccountExists, signInWithGoogle } = useAuth();
   const [identifier, setIdentifier] = useState('');
   const [password, setPassword] = useState('');
   const [otp, setOtp] = useState('');
@@ -184,6 +184,22 @@ const Login = ({ navigation }) => {
     return 'Login failed. Please try again.';
   };
 
+  const handleGoogleSignIn = async () => {
+    setIsLoading(true);
+    try {
+      const result = await signInWithGoogle();
+      if (result.success) {
+        Alert.alert('Success', 'Successfully signed in with Google!');
+      } else {
+        Alert.alert('Error', result.error || 'Google Sign-In failed');
+      }
+    } catch (error) {
+      Alert.alert('Error', 'Google Sign-In failed. Please try again.');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   return (
     <SafeAreaView style={styles.container}>
       <ScrollView contentContainerStyle={styles.scrollContent}>
@@ -337,6 +353,23 @@ const Login = ({ navigation }) => {
               {isLoading ? 'Signing In...' : 'Sign In'}
             </Text>
           </TouchableOpacity>
+
+          {/* Divider */}
+          <View style={styles.divider}>
+            <View style={styles.dividerLine} />
+            <Text style={styles.dividerText}>OR</Text>
+            <View style={styles.dividerLine} />
+          </View>
+
+          {/* Google Sign-In Button */}
+          <TouchableOpacity
+            style={[styles.googleButton, isLoading && styles.googleButtonDisabled]}
+            onPress={handleGoogleSignIn}
+            disabled={isLoading}
+          >
+            <Icon name="logo-google" size={20} color="#DB4437" />
+            <Text style={styles.googleButtonText}>Continue with Google</Text>
+          </TouchableOpacity>
         </View>
 
         <View style={styles.footer}>
@@ -480,8 +513,21 @@ const styles = StyleSheet.create({
     backgroundColor: '#fff',
     borderRadius: 12,
     paddingVertical: 16,
+    paddingHorizontal: 20,
     borderWidth: 1,
     borderColor: '#e0e0e0',
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.1,
+    shadowRadius: 3.84,
+    elevation: 5,
+  },
+  googleButtonDisabled: {
+    backgroundColor: '#f5f5f5',
+    borderColor: '#ccc',
   },
   googleButtonText: {
     marginLeft: 12,
