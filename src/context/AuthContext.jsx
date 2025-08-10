@@ -30,6 +30,8 @@ export const AuthProvider = ({ children }) => {
             id: firebaseUser.uid,
             email: firebaseUser.email || userDataResult.data.identifier,
             phoneNumber: firebaseUser.phoneNumber,
+            displayName: firebaseUser.displayName, // Include Firebase display name
+            photoURL: firebaseUser.photoURL, // Include Firebase photo URL
             ...userDataResult.data,
           };
           setUser(completeUser);
@@ -40,6 +42,8 @@ export const AuthProvider = ({ children }) => {
             id: firebaseUser.uid,
             email: firebaseUser.email || 'Unknown',
             phoneNumber: firebaseUser.phoneNumber,
+            displayName: firebaseUser.displayName,
+            photoURL: firebaseUser.photoURL,
             name: firebaseUser.displayName || 'User',
             role: 'user', // Default to user role
           };
@@ -282,6 +286,8 @@ export const AuthProvider = ({ children }) => {
             id: currentUser.uid,
             email: currentUser.email || userDataResult.data.identifier,
             phoneNumber: currentUser.phoneNumber,
+            displayName: currentUser.displayName, // Include Firebase display name
+            photoURL: currentUser.photoURL, // Include Firebase photo URL
             ...userDataResult.data,
           };
           setUser(updatedUser);

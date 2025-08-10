@@ -10,6 +10,7 @@ import {
   TextInput,
   Modal,
   Switch,
+  Image,
 } from 'react-native';
 import Icon from 'react-native-vector-icons/Ionicons';
 import { useNavigation } from '@react-navigation/native';
@@ -138,6 +139,8 @@ const Settings = () => {
       const result = await refreshUserData();
       if (result.success) {
         Alert.alert('Success', 'User data refreshed successfully');
+        // Debug: Log user data to console
+        console.log('Updated user data:', result.user);
       } else {
         Alert.alert('Error', 'Failed to refresh user data');
       }
@@ -151,6 +154,11 @@ const Settings = () => {
   const isAdmin = user?.role === 'admin';
 
   const getDisplayIdentifier = () => {
+    // For Google Sign-In users, show their email
+    if (user?.inputType === 'google' || user?.photoURL) {
+      return user?.email || user?.identifier;
+    }
+    
     return (
       user?.identifier ||
       user?.phoneNumber ||
@@ -166,11 +174,23 @@ const Settings = () => {
 
         {user && (
           <View style={[styles.profileCard, { backgroundColor: theme.card, shadowColor: theme.shadow }]}>
-            <View style={[styles.avatar, { backgroundColor: theme.avatarBackground }]}>
-              <Text style={[styles.avatarText, { color: theme.primary }]}>{(user?.name || 'U').charAt(0).toUpperCase()}</Text>
-            </View>
+            {user?.photoURL ? (
+              <Image 
+                source={{ uri: user.photoURL }} 
+                style={styles.avatarImage}
+                defaultSource={require('../../asset/logo/logo.png')}
+              />
+            ) : (
+              <View style={[styles.avatar, { backgroundColor: theme.avatarBackground }]}>
+                <Text style={[styles.avatarText, { color: theme.primary }]}>
+                  {(user?.name || user?.displayName || 'U').charAt(0).toUpperCase()}
+                </Text>
+              </View>
+            )}
             <View style={styles.profileInfo}>
-              <Text style={[styles.profileName, { color: theme.primaryText }]}>{user?.name || 'User'}</Text>
+              <Text style={[styles.profileName, { color: theme.primaryText }]}>
+                {user?.name || user?.displayName || 'User'}
+              </Text>
               <Text style={[styles.profileId, { color: theme.secondaryText }]}>{getDisplayIdentifier()}</Text>
               <View style={[
                 styles.roleBadge, 
@@ -277,6 +297,40 @@ const Settings = () => {
             <Text style={[styles.versionText, { color: theme.secondaryText }]}>1.0.0</Text>
           </View>
         </View>
+
+        {/* Debug Section - Only show in development */}
+        {__DEV__ && (
+          <View style={[styles.card, { backgroundColor: theme.card, shadowColor: theme.shadow }]}>
+            <Text style={[styles.cardTitle, { color: theme.primaryText }]}>Debug Info</Text>
+            <TouchableOpacity style={[styles.rowItem, { borderTopColor: theme.separator }]} onPress={handleRefreshUserData}>
+              <View style={styles.rowLeft}>
+                <Icon name="refresh-outline" size={20} color={theme.primary} style={styles.rowIcon} />
+                <Text style={[styles.rowText, { color: theme.primaryText }]}>
+                  {refreshing ? 'Refreshing...' : 'Refresh User Data'}
+                </Text>
+              </View>
+              <Icon name="chevron-forward" size={20} color={theme.tertiaryText} />
+            </TouchableOpacity>
+            <View style={[styles.rowItem, { borderTopColor: theme.separator }]}>
+              <View style={styles.rowLeft}>
+                <Icon name="bug-outline" size={20} color={theme.primary} style={styles.rowIcon} />
+                <Text style={[styles.rowText, { color: theme.primaryText }]}>User Type</Text>
+              </View>
+              <Text style={[styles.versionText, { color: theme.secondaryText }]}>
+                {user?.inputType || 'unknown'}
+              </Text>
+            </View>
+            <View style={[styles.rowItem, { borderTopColor: theme.separator }]}>
+              <View style={styles.rowLeft}>
+                <Icon name="image-outline" size={20} color={theme.primary} style={styles.rowIcon} />
+                <Text style={[styles.rowText, { color: theme.primaryText }]}>Has Photo</Text>
+              </View>
+              <Text style={[styles.versionText, { color: theme.secondaryText }]}>
+                {user?.photoURL ? 'Yes' : 'No'}
+              </Text>
+            </View>
+          </View>
+        )}
       </ScrollView>
 
       {/* View Secret Key Modal */}
@@ -463,6 +517,11 @@ const styles = StyleSheet.create({
     borderRadius: 28,
     alignItems: 'center',
     justifyContent: 'center',
+  },
+  avatarImage: {
+    width: 56,
+    height: 56,
+    borderRadius: 28,
   },
   avatarText: {
     fontSize: 22,

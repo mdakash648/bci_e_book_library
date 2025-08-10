@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, SafeAreaView } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, SafeAreaView, Image } from 'react-native';
 import { useAuth } from '../context/AuthContext';
 import { useNavigation } from '@react-navigation/native';
 import { useTheme } from '../context/ThemeContext';
@@ -11,6 +11,11 @@ const Profile = () => {
   const { theme } = useTheme();
 
   const getIdentifier = () => {
+    // For Google Sign-In users, show their email
+    if (user?.inputType === 'google' || user?.photoURL) {
+      return user?.email;
+    }
+    
     if (user?.inputType === 'phone') {
       return user.phoneNumber;
     }
@@ -29,14 +34,18 @@ const Profile = () => {
           <Icon name="person-circle-outline" size={24} color={theme.primary} />
           <View style={styles.infoTextContainer}>
             <Text style={[styles.label, { color: theme.secondaryText }]}>Name</Text>
-            <Text style={[styles.value, { color: theme.primaryText }]}>{user?.name || 'N/A'}</Text>
+            <Text style={[styles.value, { color: theme.primaryText }]}>
+              {user?.name || user?.displayName || 'N/A'}
+            </Text>
           </View>
         </View>
 
         <View style={styles.infoRow}>
           <Icon name="mail-outline" size={24} color={theme.primary} />
           <View style={styles.infoTextContainer}>
-            <Text style={[styles.label, { color: theme.secondaryText }]}>{user?.inputType === 'phone' ? 'Phone Number' : 'Email'}</Text>
+            <Text style={[styles.label, { color: theme.secondaryText }]}>
+              {user?.inputType === 'google' ? 'Google Email' : user?.inputType === 'phone' ? 'Phone Number' : 'Email'}
+            </Text>
             <Text style={[styles.value, { color: theme.primaryText }]}>{getIdentifier() || 'N/A'}</Text>
           </View>
         </View>
