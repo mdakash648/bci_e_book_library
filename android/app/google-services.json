@@ -14,11 +14,11 @@
       },
       "oauth_client": [
         {
-          "client_id": "869110077398-5cm29li7gs240a48tpffjim2bcc5gd1n.apps.googleusercontent.com",
+          "client_id": "869110077398-ovegrvqs3pivh7p6tvmd98ds2v3bl7hn.apps.googleusercontent.com",
           "client_type": 1,
           "android_info": {
             "package_name": "com.bci_e_book_library",
-            "certificate_hash": "d7a37c13e520844f6a1b8c32cb93e2527ec57135"
+            "certificate_hash": "5e8f16062ea3cd2c4a0d547876baa6f38cabf625"
           }
         },
         {
